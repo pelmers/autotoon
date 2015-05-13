@@ -1,4 +1,5 @@
 (function(global) {
+    "use strict";
 
     /**
      * Put list of functions into namespace of target, and return target.
@@ -14,8 +15,8 @@
      * Clamp num to the range [lo,hi].
      */
     function clamp(num, lo, hi) {
-        lo = lo || -Infinity;
-        hi = hi || Infinity;
+        lo = (lo === undefined) ? -Infinity : lo;
+        hi = (hi === undefined) ? Infinity : hi;
         if (num < lo) {
             return lo;
         } else if (num > hi) {
@@ -43,7 +44,7 @@
      * Construct n by m matrix of zeros.
      */
     function zeros(m, n) {
-        return matrixFromFunc(m, n, function(_, _) { return 0; });
+        return matrixFromFunc(m, n, function(__, _) { return 0; });
     }
 
     /**

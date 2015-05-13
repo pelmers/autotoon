@@ -12,20 +12,26 @@ function Canvas(id, maxWidth, maxHeight) {
      * and resize the canvas to fit the picture.
      * Call callback once the image is loaded.
      */
-    function loadImage(imgSource, callback) {
+    function loadImage(imgSource, isDataURI, callback) {
         function handler() {
-            image.width = util.clamp(image.width, 0, maxWidth);
-            image.height = util.clamp(image.height, 0, maxHeight);
-            elem.width = image.width;
-            elem.height = image.height;
-            ctx.drawImage(image, 0, 0);
+            // downscale factor image to maxWidth or maxHeight if it's too big
+            var scaling = util.clamp(
+                    1 / Math.max(image.width / maxWidth, image.height / maxHeight),
+                    0.0,
+                    1.0);
+            elem.width = Math.floor(scaling*image.width);
+            elem.height = Math.floor(scaling*image.height);
+            ctx.drawImage(image, 0, 0, elem.width, elem.height);
             if (callback)
                 callback();
         }
         image = new Image();
-        // allow cross-origin requests for supported servers
-        image.crossOrigin = "Anonymous";
         image.onload = handler;
+        // for some reason setting this when the src is actually not
+        // cross-origin causes firefox to not fire the onload handler
+        if (!isDataURI)
+            // allow cross-origin requests for supported servers
+            image.crossOrigin = "Anonymous";
         image.src = imgSource;
     }
 

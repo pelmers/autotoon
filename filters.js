@@ -32,7 +32,7 @@
         for (var x = 0; x < k; x++)
             for (var y = 0; y < k; y++)
                 kernel[x][y] /= sum;
-        return util.matrixConvolution(kernel, M);
+        return util.matrixConvolution(kernel, M, 0, 255);
     }
 
     /**
@@ -146,13 +146,15 @@
         // increment j up to first non-zero frequency (so we ignore those)
         while (histogram[j] == 0)
             j++;
-        j = (i + j) * low_percentage;
+        j += i * low_percentage;
+        //j = (i * low_percentage + j) * low_percentage;
         return { hi: i, lo: j };
     }
 
     /**
-     * Apply hysteresis to trace edges with given lower and upper thresholds and
-     * return the resulting matrix.
+     * Apply hysteresis to trace edges with given lower and upper thresholds
+     * and return the resulting matrix. This thins edges by only keeping points
+     * connected to "strong" edges, as defined by the threshold function.
      */
     function hysteresis(M) {
         var threshold = estimateThreshold(M),

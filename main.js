@@ -2,7 +2,9 @@ var originalData,
     currentMatrix,
     currentSobel,
     matrixStack = [],
-    c = Canvas("demoCanvas");
+    // limit the canvas size to the screen's size
+    limit = Math.max(screen.height, screen.width),
+    c = Canvas("demoCanvas", limit, limit);
 
 function reload() {
     c.reloadCanvas(util.toImageData(currentMatrix, originalData));
@@ -19,11 +21,11 @@ document.querySelector("#submit").addEventListener('click', function() {
     if (fileElement.files[0] !== undefined) {
         var reader = new FileReader();
         reader.onload = function(e) {
-            c.loadImage(e.target.result, setParams);
+            c.loadImage(e.target.result, true, setParams);
         };
         reader.readAsDataURL(fileElement.files[0]);
     } else {
-        c.loadImage(urlElement.value, setParams);
+        c.loadImage(urlElement.value, false, setParams);
     }
 });
 
@@ -73,4 +75,8 @@ document.querySelector("#reset").addEventListener('click', function() {
     c.reloadCanvas(originalData);
     matrixStack.push(currentMatrix);
     currentMatrix = util.toGrayMatrix(originalData);
+});
+
+document.querySelector("#save").addEventListener('click', function() {
+    window.location.href = c.getElem().toDataURL("image/png");
 });
