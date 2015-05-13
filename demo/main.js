@@ -1,18 +1,20 @@
 var originalData,
     currentMatrix,
     currentSobel,
+    matrixStack = [],
     c = Canvas("demoCanvas");
 
 function reload() {
-    c.reloadCanvas(toImageData(currentMatrix, originalData));
+    c.reloadCanvas(util.toImageData(currentMatrix, originalData));
 }
 
 document.querySelector("#submit").addEventListener('click', function() {
     var fileElement = document.querySelector("#file"),
         urlElement = document.querySelector("#url");
+    matrixStack = [];
     function setParams() {
         originalData = c.getImageData();
-        currentMatrix = toGrayMatrix(originalData);
+        currentMatrix = util.toGrayMatrix(originalData);
     }
     if (fileElement.files[0] !== undefined) {
         var reader = new FileReader();
@@ -26,37 +28,48 @@ document.querySelector("#submit").addEventListener('click', function() {
 });
 
 document.querySelector("#blur").addEventListener('click', function() {
-    currentMatrix = gaussianMask(currentMatrix, 3, 1.0);
+    matrixStack.push(currentMatrix);
+    currentMatrix = filters.gaussianMask(currentMatrix, 3, 1.0);
     reload();
 });
 
 document.querySelector("#sobel").addEventListener('click', function() {
-    currentSobel = sobelMask(currentMatrix);
+    matrixStack.push(currentMatrix);
+    currentSobel = filters.sobelMask(currentMatrix);
     currentMatrix = currentSobel.S;
     reload();
 });
 
 document.querySelector("#laplace").addEventListener('click', function() {
-    currentMatrix = laplaceMask(currentMatrix);
+    matrixStack.push(currentMatrix);
+    currentMatrix = filters.laplaceMask(currentMatrix);
     reload();
 });
 
 document.querySelector("#nonmax").addEventListener('click', function() {
-    currentMatrix = nonMaxSuppression(currentSobel.S, currentSobel.G);
+    matrixStack.push(currentMatrix);
+    currentMatrix = filters.nonMaxSuppression(currentSobel.S, currentSobel.G);
     reload();
 });
 
 document.querySelector("#hysteresis").addEventListener('click', function() {
-    currentMatrix = hysteresis(currentMatrix);
+    matrixStack.push(currentMatrix);
+    currentMatrix = filters.hysteresis(currentMatrix);
     reload();
 });
 
 document.querySelector("#invert").addEventListener('click', function() {
-    currentMatrix = inverted(currentMatrix);
+    matrixStack.push(currentMatrix);
+    currentMatrix = filters.inverted(currentMatrix);
+    reload();
+});
+
+document.querySelector("#undo").addEventListener('click', function() {
+    currentMatrix = matrixStack.pop();
     reload();
 });
 
 document.querySelector("#reset").addEventListener('click', function() {
     c.reloadCanvas(originalData);
-    currentMatrix = toGrayMatrix(originalData);
+    currentMatrix = util.toGrayMatrix(originalData);
 });

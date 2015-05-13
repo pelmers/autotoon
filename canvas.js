@@ -14,8 +14,8 @@ function Canvas(id, maxWidth, maxHeight) {
      */
     function loadImage(imgSource, callback) {
         function handler() {
-            image.width = clamp(image.width, 0, maxWidth);
-            image.height = clamp(image.height, 0, maxHeight);
+            image.width = util.clamp(image.width, 0, maxWidth);
+            image.height = util.clamp(image.height, 0, maxHeight);
             elem.width = image.width;
             elem.height = image.height;
             ctx.drawImage(image, 0, 0);
@@ -60,12 +60,7 @@ function Canvas(id, maxWidth, maxHeight) {
      */
     function getElem() { return elem; }
 
-    return function(exports) {
-        var obj = {}
-        for (var i = 0; i < exports.length; i++)
-            obj[exports[i].name] = exports[i];
-        return obj;
-    }([
+    return util.exports({}, [
             // exported functions on Canvas objects
             loadImage, getImage, getImageData, reloadCanvas, getContext,
             getElem
