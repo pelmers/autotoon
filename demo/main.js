@@ -2,7 +2,9 @@ var originalData,
     currentMatrix,
     currentSobel,
     matrixStack = [],
-    c = Canvas("demoCanvas");
+    // limit the canvas size to the screen's size
+    limit = Math.max(screen.height, screen.width),
+    c = Canvas("demoCanvas", limit, limit);
 
 function reload() {
     c.reloadCanvas(util.toImageData(currentMatrix, originalData));
@@ -71,5 +73,10 @@ document.querySelector("#undo").addEventListener('click', function() {
 
 document.querySelector("#reset").addEventListener('click', function() {
     c.reloadCanvas(originalData);
+    matrixStack.push(currentMatrix);
     currentMatrix = util.toGrayMatrix(originalData);
+});
+
+document.querySelector("#save").addEventListener('click', function() {
+    window.location.href = c.getElem().toDataURL("image/png");
 });

@@ -14,11 +14,14 @@ function Canvas(id, maxWidth, maxHeight) {
      */
     function loadImage(imgSource, callback) {
         function handler() {
-            image.width = util.clamp(image.width, 0, maxWidth);
-            image.height = util.clamp(image.height, 0, maxHeight);
-            elem.width = image.width;
-            elem.height = image.height;
-            ctx.drawImage(image, 0, 0);
+            // downscale factor image to maxWidth or maxHeight if it's too big
+            var scaling = util.clamp(
+                    1 / Math.max(image.width / maxWidth, image.height / maxHeight),
+                    0.0,
+                    1.0);
+            elem.width = Math.floor(scaling*image.width);
+            elem.height = Math.floor(scaling*image.height);
+            ctx.drawImage(image, 0, 0, elem.width, elem.height);
             if (callback)
                 callback();
         }
