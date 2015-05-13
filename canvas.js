@@ -13,10 +13,7 @@ function Canvas(id, maxWidth, maxHeight) {
      * Call callback once the image is loaded.
      */
     function loadImage(imgSource, callback) {
-        image = new Image();
-        // allow cross-origin requests for supported servers
-        image.crossOrigin = "Anyonymous";
-        image.onload = function() {
+        function handler() {
             image.width = clamp(image.width, 0, maxWidth);
             image.height = clamp(image.height, 0, maxHeight);
             elem.width = image.width;
@@ -24,7 +21,11 @@ function Canvas(id, maxWidth, maxHeight) {
             ctx.drawImage(image, 0, 0);
             if (callback)
                 callback();
-        };
+        }
+        image = new Image();
+        // allow cross-origin requests for supported servers
+        image.crossOrigin = "Anonymous";
+        image.onload = handler;
         image.src = imgSource;
     }
 

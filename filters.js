@@ -164,8 +164,9 @@ function hysteresis(M) {
             for (var offsetX = -1; offsetX <= 1; offsetX++) {
                 var r = i + offsetY,
                     c = j + offsetX;
+                // bounds check
                 if (r >= 0 && r < m && c >= 0 && c < n)
-                    // check that it meets threshold and not already in group
+                    // check threshold and not already in group or real
                     if (M[r][c] >= threshold.lo && !realEdges[r][c] &&
                             group.indexOf(r * n + c) === -1)
                         collectNeighbors(r, c, group);
@@ -177,7 +178,8 @@ function hysteresis(M) {
         for (var j = 0; j < n; j++) {
             // we consider that these are "strong" pixels, then we trace the
             // edge that they are part of
-            if (M[i][j] >= threshold.hi) {
+            // also we skip any pixels we have already marked as real
+            if (M[i][j] >= threshold.hi && !realEdges[i][j]) {
                 var group = collectNeighbors(i, j);
                 group.forEach(function(g) {
                     realEdges[Math.floor(g / n)][g % n] = 1;
