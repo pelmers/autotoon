@@ -2,8 +2,7 @@
  * Wrap a canvas object with given ID and maximum parameters.
  */
 function Canvas(id, maxWidth, maxHeight) {
-    maxWidth = maxWidth || 1/0;
-    maxHeight = maxHeight || 1/0;
+    "use strict";
     var elem = document.getElementById(id), // canvas element
         ctx = elem.getContext('2d'),        // drawing context
         image = null;                       // Image object
@@ -49,6 +48,17 @@ function Canvas(id, maxWidth, maxHeight) {
      * Return the currently displayed Image object.
      */
     function getImage() { return image; }
+
+    /**
+     * Return the current canvas 2D context.
+     */
+    function getContext() { return ctx; }
+
+    /**
+     * Return the current canvas DOM element.
+     */
+    function getElem() { return elem; }
+
     return function(exports) {
         var obj = {}
         for (var i = 0; i < exports.length; i++)
@@ -56,6 +66,7 @@ function Canvas(id, maxWidth, maxHeight) {
         return obj;
     }([
             // exported functions on Canvas objects
-            loadImage, getImage, getImageData, reloadCanvas
+            loadImage, getImage, getImageData, reloadCanvas, getContext,
+            getElem
     ]);
 }

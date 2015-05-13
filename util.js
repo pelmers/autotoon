@@ -1,21 +1,9 @@
 /**
- * Construct n by m matrix of zeros.
- */
-function zeros(m, n) {
-    matrix = [];
-    for (var i = 0; i < m; i++) {
-        matrix.push([]);
-        for (var j = 0; j < n; j++) {
-            matrix[i].push(0);
-        }
-    }
-    return matrix;
-}
-
-/**
  * Clamp num to the range [lo,hi].
  */
 function clamp(num, lo, hi) {
+    lo = lo || -Infinity;
+    hi = hi || Infinity;
     if (num < lo) {
         return lo;
     } else if (num > hi) {
@@ -23,6 +11,27 @@ function clamp(num, lo, hi) {
     } else {
         return num;
     }
+}
+
+/**
+ * Construct a matrix from a generator function.
+ */
+function matrixFromFunc(m, n, func) {
+    var matrix = [];
+    for (var i = 0; i < m; i++) {
+        matrix.push([]);
+        for (var j = 0; j < n; j++) {
+            matrix[i].push(func(i, j));
+        }
+    }
+    return matrix;
+}
+
+/**
+ * Construct n by m matrix of zeros.
+ */
+function zeros(m, n) {
+    return matrixFromFunc(m, n, function(_, _) { return 0; });
 }
 
 /**
@@ -36,17 +45,17 @@ function getPixel(imageData, i) {
         g: imageData.data[i+1],
         b: imageData.data[i+2],
         a: imageData.data[i+3]
-    }:{ r: 255, g: 255, b: 255, a: 255 };
+    }:{ r: 0, g: 0, b: 0, a: 0 };
 }
 
 /**
  * Set the rgba value of pixel i in given image data.
  */
 function setPixel(imageData, i, rgba) {
-    imageData.data[i] = rgb.r;
-    imageData.data[i+1] = rgb.g;
-    imageData.data[i+2] = rgb.b;
-    imageData.data[i+3] = rgb.a;
+    imageData.data[i] = rgba.r;
+    imageData.data[i+1] = rgba.g;
+    imageData.data[i+2] = rgba.b;
+    imageData.data[i+3] = rgba.a;
 }
 
 /**
@@ -59,27 +68,30 @@ function setPixelGray(imageData, i, val) {
 }
 
 /**
+ * Return the grayscale value of given rgb pixel.
+ */
+function grayScale(pixel) {
+    return 0.3*pixel.r + 0.59*pixel.g + 0.11*pixel.b;
+}
+
+/**
  * Turn imageData into a two-dimensional width x height matrix, where each
  * entry has properties r, g, b, a.
  */
 function toMatrix(imageData) {
-    matrix = zeros(imageData.height, imageData.width);
-    for (var r = 0; r < imageData.height; r++)
-        for (var c = 0; c < imageData.width; c++)
-            matrix[r][c] = getPixel(imageData, 4 * (r * imageData.width + c));
-    return matrix;
+    return matrixFromFunc(imageData.height, imageData.width, function(r,c) {
+        return getPixel(imageData, 4 * (r * imageData.width + c));
+    });
 }
 
 /**
- * Turn imageData into a two-dimensional width x height matrix, assuming
- * imageData is in grayscale.
+ * Turn imageData into a two-dimensional width x height matrix of [0, 255]
+ * integers, assuming imageData is in grayscale.
  */
 function toGrayMatrix(imageData) {
-    matrix = zeros(imageData.height, imageData.width);
-    for (var r = 0; r < imageData.height; r++)
-        for (var c = 0; c < imageData.width; c++)
-            matrix[r][c] = imageData.data[4*(imageData.width*r + c)];
-    return matrix;
+    return matrixFromFunc(imageData.height, imageData.width, function(r,c) {
+        return grayScale(getPixel(imageData, 4 * (r * imageData.width + c)));
+    });
 }
 
 /**
@@ -105,35 +117,35 @@ function toImageData(matrix, originalData) {
  */
 function borderTrim(M, l, r, t, b) {
     var ret = [];
-    for (var i = t; i < M.length - b; i++)
-        ret.push(M[i].slice(l, M[i].length - r));
+    M.slice(t, M.length - b).forEach(function(row) {
+        ret.push(row.slice(l, row.length - r));
+    })
     return ret;
 }
 
-/** Apply discrete convolution with given pxq mask to the given matrix, where p
+/**
+ * Apply discrete convolution with given pxq mask to the given matrix, where p
  * and q are odd, and a matrix is an array of arrays of numbers. Return a new
  * matrix of slightly smaller size, where each element is the output of the
  * mask operator centered at that point and edges are trimmed where the
- * operator could not be applied.
+ * operator could not be applied, clamped to lb and ub if provided and rounded
+ * to the nearest integer.
  */
-function matrixConvolution(kernel, matrix) {
+function matrixConvolution(kernel, matrix, lb, ub) {
     var p = kernel.length,
         q = kernel[0].length,
         m = matrix.length,
         n = matrix[0].length,
         rY = (p - 1) / 2,
-        rX = (q - 1) / 2,
-        conv = zeros(m, n);
-    // Double loop over each reachable element of matrix (i,j)
-    for (var i = rY; i < m - rY; i++) {
-        for (var j = rX; j < n - rX; j++) {
-            // Loop over each element of kernel (a,b) to construct conv (i,j)
-            for (var a = -rY; a <= rY; a++) {
-                for (var b = -rX; b <= rX; b++) {
-                    conv[i][j] += kernel[a + rY][b + rX] * matrix[i + a][j + b];
-                }
-            }
-        }
-    }
-    return borderTrim(conv, rX, rX, rY, rY);
+        rX = (q - 1) / 2;
+    return borderTrim(matrixFromFunc(m, n, function(i, j) {
+        if (i < rY || i >= m - rY || j < rX || j >= n - rX)
+            // can't apply the operator too close to the boundaries
+            return 0;
+        var sum = 0;
+        for (var a = -rY; a <= rY; a++)
+            for (var b = -rX; b <= rX; b++)
+                sum += kernel[a + rY][b + rX] * matrix[i + a][j + b];
+        return clamp(Math.round(sum), lb, ub);
+    }), rX, rX, rY, rY);
 }
