@@ -71,5 +71,6 @@ document.querySelector("#undo").addEventListener('click', function() {
 
 document.querySelector("#reset").addEventListener('click', function() {
     c.reloadCanvas(originalData);
+    matrixStack.push(currentMatrix);
     currentMatrix = util.toGrayMatrix(originalData);
 });
