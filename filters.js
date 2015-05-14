@@ -17,13 +17,13 @@
     function gaussianMask(M, radius, sigma) {
         // construct the blur kernel
         var k = 2 * radius + 1,
-        mean = k / 2,
-        sum = 0,
-        kernel = util.matrixFromFunc(k, k, function(x, y) {
-            return Math.exp(-0.5 * (Math.pow((x - mean) / sigma, 2) +
-                        Math.pow((y - mean) / sigma, 2)) ) / (2 * Math.PI *
-                    sigma * sigma);
-        });
+            mean = k / 2,
+            sum = 0,
+            kernel = util.matrixFromFunc(k, k, function(x, y) {
+                return Math.exp(-0.5 * (Math.pow((x - mean) / sigma, 2) +
+                            Math.pow((y - mean) / sigma, 2)) ) / (2 * Math.PI *
+                        sigma * sigma);
+            });
         // compute sum
         for (var x = 0; x < k; x++)
             for (var y = 0; y < k; y++)
@@ -56,17 +56,17 @@
     function sobelMask(M) {
         // gradient approximation masks for x and y directions
         var Gx = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
-        Gy = [[1, 2, 1], [0, 0, 0], [-1, -2, -1]],
-        Cx = util.matrixConvolution(Gx, M),
-        Cy = util.matrixConvolution(Gy, M),
-        Csum = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
-            return util.clamp(Math.abs(Cx[i][j]) + Math.abs(Cy[i][j]), 0, 255);
-        }),
-        G = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
-            if (Cx[i][j] == 0)
-                return (Cy[i][j]) ? Math.PI / 2 : 0;
-            return Math.atan(Math.abs(Cy[i][j]) / Math.abs(Cx[i][j]));
-        });
+            Gy = [[1, 2, 1], [0, 0, 0], [-1, -2, -1]],
+            Cx = util.matrixConvolution(Gx, M),
+            Cy = util.matrixConvolution(Gy, M),
+            Csum = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
+                return util.clamp(Math.abs(Cx[i][j]) + Math.abs(Cy[i][j]), 0, 255);
+            }),
+            G = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
+                if (Cx[i][j] == 0)
+                    return (Cy[i][j]) ? Math.PI / 2 : 0;
+                return Math.atan(Math.abs(Cy[i][j]) / Math.abs(Cx[i][j]));
+            });
         return { S: Csum, G: G };
     }
 
@@ -126,10 +126,10 @@
      */
     function estimateThreshold(M) {
         var high_percentage = 0.2, // percentage of pixels that meet high threshold
-        low_percentage = 0.5, // ratio of low threshold to high
-        histogram = util.zeros(1, 256)[0], // length 256 array of zeros
-        m = M.length,
-        n = M[0].length;
+            low_percentage = 0.5, // ratio of low threshold to high
+            histogram = util.zeros(1, 256)[0], // length 256 array of zeros
+            m = M.length,
+            n = M[0].length;
         // construct histogram of pixel values
         M.forEach(function(r) {
             r.forEach(function(e) {
@@ -138,9 +138,9 @@
         });
         // number of pixels we want to target
         var pixels = (m * n - histogram[0]) * high_percentage,
-        high_cutoff = 0,
-        i = histogram.length,
-        j = 1;
+            high_cutoff = 0,
+            i = histogram.length,
+            j = 1;
         while (high_cutoff < pixels)
             high_cutoff += histogram[i--];
         // increment j up to first non-zero frequency (so we ignore those)
@@ -165,18 +165,11 @@
         function collectNeighbors(i, j, group) {
             group = (group === undefined) ? [] : group;
             group.push(i * n + j);
-            for (var offsetY = -1; offsetY <= 1; offsetY++) {
-                for (var offsetX = -1; offsetX <= 1; offsetX++) {
-                    var r = i + offsetY,
-                        c = j + offsetX;
-                    // bounds check
-                    if (r >= 0 && r < m && c >= 0 && c < n)
-                        // check threshold and not already in group or real
-                        if (M[r][c] >= threshold.lo && !realEdges[r][c] &&
-                                group.indexOf(r * n + c) === -1)
-                            collectNeighbors(r, c, group);
-                }
-            }
+            util.traverseNeighborhood(M, i, j, function(val, r, c) {
+                if (val >= threshold.lo && !realEdges[r][c] && group.indexOf(r
+                            * n + c) === -1)
+                    collectNeighbors(r, c, group);
+            });
             return group;
         }
         for (var i = 0; i < m; i++) {

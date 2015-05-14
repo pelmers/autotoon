@@ -66,6 +66,12 @@ document.querySelector("#invert").addEventListener('click', function() {
     reload();
 });
 
+document.querySelector("#autotoon").addEventListener('click', function() {
+    //matrixStack.push(currentMatrix);
+    c.autoToon(currentMatrix, 0.005);
+});
+
+
 document.querySelector("#undo").addEventListener('click', function() {
     currentMatrix = matrixStack.pop();
     reload();

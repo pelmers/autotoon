@@ -48,6 +48,18 @@
     }
 
     /**
+     * Traverse the in-bounds neighborhood of given position, including itself.
+     * Call func(val, r, c) for each neighbor.
+     */
+    function traverseNeighborhood(M, i, j, func) {
+        var m = M.length,
+            n = M[0].length;
+        for (var r = clamp(i - 1, 0); r <= clamp(i + 1, 0, m - 1); r++)
+            for (var c = clamp(j - 1, 0); c <= clamp(j + 1, 0, n - 1); c++)
+                func(M[r][c], r, c);
+    }
+
+    /**
      * Get the rgba value of pixel i in given image data.
      * If i is out of bounds, then return (0,0,0,0).
      */
@@ -114,8 +126,8 @@
      */
     function toImageData(matrix, originalData) {
         var m = matrix.length,
-        n = matrix[0].length,
-        newData = new ImageData(new Uint8ClampedArray(m*n*4), n, m);
+            n = matrix[0].length,
+            newData = new ImageData(new Uint8ClampedArray(m*n*4), n, m);
         for (var i = 0; i < m * n; i++) {
             setPixelGray(newData, 4*i, matrix[Math.floor(i / n)][i % n]);
             // set alpha channel if originalData is given.
@@ -146,11 +158,11 @@
      */
     function matrixConvolution(kernel, matrix, lb, ub) {
         var p = kernel.length,
-        q = kernel[0].length,
-        m = matrix.length,
-        n = matrix[0].length,
-        rY = (p - 1) / 2,
-        rX = (q - 1) / 2;
+            q = kernel[0].length,
+            m = matrix.length,
+            n = matrix[0].length,
+            rY = (p - 1) / 2,
+            rX = (q - 1) / 2;
         return borderTrim(matrixFromFunc(m, n, function(i, j) {
             if (i < rY || i >= m - rY || j < rX || j >= n - rX)
                 // can't apply the operator too close to the boundaries
@@ -166,6 +178,6 @@
     global.util = exports({}, [
             exports, clamp, matrixFromFunc, zeros, getPixel, setPixel,
             setPixelGray, grayScale, toGrayMatrix, toMatrix, toImageData,
-            borderTrim, matrixConvolution
+            borderTrim, matrixConvolution, traverseNeighborhood
     ]);
 })(this);
