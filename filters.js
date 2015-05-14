@@ -17,13 +17,13 @@
     function gaussianMask(M, radius, sigma) {
         // construct the blur kernel
         var k = 2 * radius + 1,
-        mean = k / 2,
-        sum = 0,
-        kernel = util.matrixFromFunc(k, k, function(x, y) {
-            return Math.exp(-0.5 * (Math.pow((x - mean) / sigma, 2) +
-                        Math.pow((y - mean) / sigma, 2)) ) / (2 * Math.PI *
-                    sigma * sigma);
-        });
+            mean = k / 2,
+            sum = 0,
+            kernel = util.matrixFromFunc(k, k, function(x, y) {
+                return Math.exp(-0.5 * (Math.pow((x - mean) / sigma, 2) +
+                            Math.pow((y - mean) / sigma, 2)) ) / (2 * Math.PI *
+                        sigma * sigma);
+            });
         // compute sum
         for (var x = 0; x < k; x++)
             for (var y = 0; y < k; y++)
@@ -56,17 +56,17 @@
     function sobelMask(M) {
         // gradient approximation masks for x and y directions
         var Gx = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
-        Gy = [[1, 2, 1], [0, 0, 0], [-1, -2, -1]],
-        Cx = util.matrixConvolution(Gx, M),
-        Cy = util.matrixConvolution(Gy, M),
-        Csum = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
-            return util.clamp(Math.abs(Cx[i][j]) + Math.abs(Cy[i][j]), 0, 255);
-        }),
-        G = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
-            if (Cx[i][j] == 0)
-                return (Cy[i][j]) ? Math.PI / 2 : 0;
-            return Math.atan(Math.abs(Cy[i][j]) / Math.abs(Cx[i][j]));
-        });
+            Gy = [[1, 2, 1], [0, 0, 0], [-1, -2, -1]],
+            Cx = util.matrixConvolution(Gx, M),
+            Cy = util.matrixConvolution(Gy, M),
+            Csum = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
+                return util.clamp(Math.abs(Cx[i][j]) + Math.abs(Cy[i][j]), 0, 255);
+            }),
+            G = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
+                if (Cx[i][j] == 0)
+                    return (Cy[i][j]) ? Math.PI / 2 : 0;
+                return Math.atan(Math.abs(Cy[i][j]) / Math.abs(Cx[i][j]));
+            });
         return { S: Csum, G: G };
     }
 
@@ -94,6 +94,7 @@
                 return M[i][j];
             // previous and next values along the approximated gradient
             var prev, next;
+            // TODO: interpolate for missing angle rather than rounding to nearest
             switch (discretizeOrientation(G[i][j])) {
                 case 0:
                     prev = M[i][j-1];
@@ -122,14 +123,14 @@
     }
 
     /**
-     * Estimate upper and lower hysteresis thresholds, returning {hi: num, lo: num}.
+     * Estimate upper and lower hysteresis thresholds, returning {hi: num, lo:
+     * num}, where high_percentage is the percentage of pixels that will meet
+     * hi, and low_percentage is the ratio of lo to hi.
      */
-    function estimateThreshold(M) {
-        var high_percentage = 0.2, // percentage of pixels that meet high threshold
-        low_percentage = 0.5, // ratio of low threshold to high
-        histogram = util.zeros(1, 256)[0], // length 256 array of zeros
-        m = M.length,
-        n = M[0].length;
+    function estimateThreshold(M, high_percentage, low_percentage) {
+        var histogram = util.zeros(1, 256)[0], // length 256 array of zeros
+            m = M.length,
+            n = M[0].length;
         // construct histogram of pixel values
         M.forEach(function(r) {
             r.forEach(function(e) {
@@ -138,9 +139,9 @@
         });
         // number of pixels we want to target
         var pixels = (m * n - histogram[0]) * high_percentage,
-        high_cutoff = 0,
-        i = histogram.length,
-        j = 1;
+            high_cutoff = 0,
+            i = histogram.length,
+            j = 1;
         while (high_cutoff < pixels)
             high_cutoff += histogram[i--];
         // increment j up to first non-zero frequency (so we ignore those)
@@ -156,28 +157,26 @@
      * and return the resulting matrix. This thins edges by only keeping points
      * connected to "strong" edges, as defined by the threshold function.
      */
-    function hysteresis(M) {
-        var threshold = estimateThreshold(M),
+    function hysteresis(M, high_percentage, low_percentage) {
+        var threshold = estimateThreshold(M, high_percentage, low_percentage),
             m = M.length,
             n = M[0].length,
             realEdges = util.zeros(m, n); // 0 if not connected to real edge, 1 if is
         // Return array of neighbors of M[i][j] where M[n] >= threshold.lo
-        function collectNeighbors(i, j, group) {
-            group = (group === undefined) ? [] : group;
-            group.push(i * n + j);
-            for (var offsetY = -1; offsetY <= 1; offsetY++) {
-                for (var offsetX = -1; offsetX <= 1; offsetX++) {
-                    var r = i + offsetY,
-                        c = j + offsetX;
-                    // bounds check
-                    if (r >= 0 && r < m && c >= 0 && c < n)
-                        // check threshold and not already in group or real
-                        if (M[r][c] >= threshold.lo && !realEdges[r][c] &&
-                                group.indexOf(r * n + c) === -1)
-                            collectNeighbors(r, c, group);
-                }
+        function collectNeighbors(i, j) {
+            var stack = [i * n + j];
+            realEdges[i][j] = 1;
+            while (stack.length > 0) {
+                var v = stack.pop();
+                util.traverseNeighborhood(M, Math.floor(v / n), v % n,
+                        function(val, r, c) {
+                    var pos = r * n + c;
+                    if (val >= threshold.lo && !realEdges[r][c]) {
+                        realEdges[r][c] = 1;
+                        stack.push(pos);
+                    }
+                });
             }
-            return group;
         }
         for (var i = 0; i < m; i++) {
             for (var j = 0; j < n; j++) {
@@ -185,10 +184,7 @@
                 // edge that they are part of
                 // also we skip any pixels we have already marked as real
                 if (M[i][j] >= threshold.hi && !realEdges[i][j]) {
-                    var group = collectNeighbors(i, j);
-                    group.forEach(function(g) {
-                        realEdges[Math.floor(g / n)][g % n] = 1;
-                    });
+                    collectNeighbors(i, j);
                 }
             }
         }
