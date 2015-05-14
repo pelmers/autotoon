@@ -3,24 +3,41 @@
     <head><title>Autotoon Demo</title></head>
     <body>
         <div>
-        URL:<input id="url"></input>
-        or
-        File:<input type="file" id="file"></input>
-        <button id="submit">Submit</button>
+            URL:<input id="url"></input>
+            or
+            File:<input type="file" id="file"></input>
+            <button id="submit">Submit</button>
         </div>
-        <canvas id="demoCanvas" width='800' height='600'></canvas>
+        <canvas id="demoCanvas" width='600' height='400'></canvas>
         <div>
-        <button id="blur">Gaussian blur</button>
-        <button id="sobel">Sobel mask</button>
-        <button id="laplace">Laplacian mask</button>
-        <button id="nonmax">Nonmaximum suppression</button>
-        <button id="hysteresis">Hysteresis</button>
-        <button id="invert">Invert</button>
-        <button id="autotoon">Autotoon</button>
+            <div>
+                <button id="auto">Automate process</button>
+            </div>
+            <div>
+                <button id="blur">Gaussian blur</button>
+                TODO: radius and variance control
+            </div>
+            <button id="sobel">Sobel mask</button>
+            <button id="nonmax">Nonmaximum suppression</button>
+            <button id="laplace">Laplacian mask</button>
+            <div>
+                <button id="hysteresis">Hysteresis</button>
+                TODO: high/low threshold percentages
+            </div>
+            <button id="invert">Invert</button>
+            <div>
+                <button id="autotoon">Autotoon</button>
+                TODO: speed slider, direction choice, edge sorting,
+                black/white, stop btn
+            </div>
         </div>
-        <button id="undo">Undo</button>
-        <button id="reset">Reset</button>
-        <button id="save">Save</button>
+        <div>
+            <button id="undo">Undo</button>
+            <button id="reset">Reset</button>
+            <button id="save">Save</button>
+            <button id="share">Share</button>
+        </div>
+
         <script src="../util.js"></script>
         <script src="../canvas.js"></script>
         <script src="../filters.js"></script>

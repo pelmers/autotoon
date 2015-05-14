@@ -29,6 +29,18 @@ document.querySelector("#submit").addEventListener('click', function() {
     }
 });
 
+document.querySelector("#auto").addEventListener('click', function() {
+    // Canny edge detection method
+    matrixStack.push(currentMatrix);
+    currentMatrix = filters.gaussianMask(currentMatrix, 3, 1.0);
+    currentSobel = filters.sobelMask(currentMatrix);
+    currentMatrix = currentSobel.S;
+    currentMatrix = filters.nonMaxSuppression(currentSobel.S, currentSobel.G);
+    currentMatrix = filters.hysteresis(currentMatrix);
+    currentMatrix = filters.inverted(currentMatrix);
+    reload();
+});
+
 document.querySelector("#blur").addEventListener('click', function() {
     matrixStack.push(currentMatrix);
     currentMatrix = filters.gaussianMask(currentMatrix, 3, 1.0);
@@ -67,8 +79,8 @@ document.querySelector("#invert").addEventListener('click', function() {
 });
 
 document.querySelector("#autotoon").addEventListener('click', function() {
-    //matrixStack.push(currentMatrix);
-    c.autoToon(currentMatrix, 0.005);
+    matrixStack.push(currentMatrix);
+    c.autoToon(currentMatrix, 0.8);
 });
 
 
