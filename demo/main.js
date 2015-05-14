@@ -94,41 +94,74 @@ document.querySelector("#invert").addEventListener('click', function() {
     reload();
 });
 
+var iterators = {
+    "top": function(M, cb) {
+        for (var i = 0; i < M.length; i++)
+            for (var j = 0; j < M[0].length; j++)
+                cb(i, j);
+    },
+    "bottom": function(M, cb) {
+        for (var i = M.length - 1; i >= 0; i--)
+            for (var j = 0; j < M[0].length; j++)
+                cb(i, j);
+    },
+    "left": function(M, cb) {
+        for (var j = 0; j < M[0].length; j++)
+            for (var i = 0; i < M.length; i++)
+                cb(i, j);
+    },
+    "right": function(M, cb) {
+        for (var j = M[0].length - 1; j >= 0; j--)
+            for (var i = 0; i < M.length; i++)
+                cb(i, j);
+    },
+};
+
 document.querySelector("#autotoon").addEventListener('click', function() {
     matrixStack.push(currentMatrix);
     var speed = parseFloat(document.querySelector("#toon_speed").value),
         direction = document.querySelector("#toon_dir").value,
         sort = document.querySelector("#toon_sort").value,
         bgColor = parseInt(document.querySelector("#toon_bg").value),
-        iterator = function(M, cb) {
-            if (direction === "top")
-                for (var i = 0; i < M.length; i++)
-                    for (var j = 0; j < M[0].length; j++)
-                        cb(i, j);
-            else if (direction === "bottom")
-                for (var i = M.length - 1; i >= 0; i--)
-                    for (var j = 0; j < M[0].length; j++)
-                        cb(i, j);
-            else if (direction === "left")
-                for (var j = 0; j < M[0].length; j++)
-                    for (var i = 0; i < M.length; i++)
-                        cb(i, j);
-            else if (direction === "right")
-                for (var j = M[0].length - 1; j >= 0; j--)
-                    for (var i = 0; i < M.length; i++)
-                        cb(i, j);
-        },
-        comparator = function(e1, e2) {
-            if (sort === "first")
+        M = currentMatrix,
+        n = M[0].length,
+        m = M.length,
+        comparator = (function() {
+            function first(_, __) {
                 return 0;
-            else if (sort === "longest")
+            }
+            function longest(e1, e2) {
                 return e2.length - e1.length;
-            else if (sort === "random")
+            }
+            function random(_, __) {
                 return Math.random() - Math.random();
+            }
+            function darkest(e1, e2) {
+                var s1 = 0, s2 = 0;
+                e1.forEach(function(elem) {
+                    s1 += Math.abs(bgColor - M[Math.floor(elem / n)][elem % n]);
+                });
+                e2.forEach(function(elem) {
+                    s2 += Math.abs(bgColor - M[Math.floor(elem / n)][elem % n]);
+                });
+                return (s2 / e2.length) - (s1 / e1.length);
+            }
+            function center(e1, e2) {
+                var c1 = 0, c2 = 0;
+                e1.forEach(function(elem) {
+                    c1 += Math.abs(m / 2 - elem / n) + Math.abs(n / 2 - elem % n);
+                });
+                e2.forEach(function(elem) {
+                    c2 += Math.abs(m / 2 - elem / n) + Math.abs(n / 2 - elem % n);
+                });
+                return (c1 / e1.length) - (c2 / e2.length);
+            }
+            return util.exports({}, [first, longest, random, darkest, center])[sort];
+        })(),
+        update = function() {
+            currentToon = c.autoToon(currentMatrix, speed, bgColor,
+                    iterators[direction], comparator);
         };
-    function update() {
-        currentToon = c.autoToon(currentMatrix, speed, bgColor, iterator, comparator);
-    }
     if (currentToon) {
         currentToon.stop(update);
     } else {

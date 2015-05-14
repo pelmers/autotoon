@@ -150,8 +150,7 @@ function Canvas(id, maxWidth, maxHeight) {
             for (var i = begin; i < end; i++) {
                 var r = Math.floor(groups[num][i] / n),
                     c = groups[num][i] % n;
-                submat[r - minR][c - minC] = M[r][c];
-                globalmat[r][c] = M[r][c];
+                globalmat[r][c] = submat[r - minR][c - minC] = M[r][c];
             }
 
             ctx.putImageData(util.toImageData(submat), minC, minR);
