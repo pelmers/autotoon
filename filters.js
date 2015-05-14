@@ -165,14 +165,14 @@
         // Return array of neighbors of M[i][j] where M[n] >= threshold.lo
         function collectNeighbors(i, j) {
             var stack = [i * n + j];
-            realEdges[i][j] = 1;
+            realEdges[i][j] = M[i][j];
             while (stack.length > 0) {
                 var v = stack.pop();
                 util.traverseNeighborhood(M, Math.floor(v / n), v % n,
                         function(val, r, c) {
                     var pos = r * n + c;
                     if (val >= threshold.lo && !realEdges[r][c]) {
-                        realEdges[r][c] = 1;
+                        realEdges[r][c] = val;
                         stack.push(pos);
                     }
                 });
@@ -188,10 +188,7 @@
                 }
             }
         }
-        // now we suppress all values not part of a real edge
-        return util.matrixFromFunc(m, n, function(i, j) {
-            return (realEdges[i][j]) ? M[i][j] : 0;
-        });
+        return realEdges;
     }
 
     global.filters = util.exports({}, [
