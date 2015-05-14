@@ -8,11 +8,15 @@ var originalData,
     c = Canvas("demoCanvas", limit, limit);
 
 function reload() {
-    if (currentToon) {
-        currentToon.stop();
-        currentToon = null;
+    function update() {
+        c.reloadCanvas(util.toImageData(currentMatrix, originalData));
     }
-    c.reloadCanvas(util.toImageData(currentMatrix, originalData));
+    if (currentToon) {
+        currentToon.stop(update);
+        currentToon = null;
+    } else {
+        update();
+    }
 }
 
 document.querySelector("#submit").addEventListener('click', function() {
@@ -122,7 +126,14 @@ document.querySelector("#autotoon").addEventListener('click', function() {
             else if (sort === "random")
                 return Math.random() - Math.random();
         };
-    currentToon = c.autoToon(currentMatrix, speed, bgColor, iterator, comparator);
+    function update() {
+        currentToon = c.autoToon(currentMatrix, speed, bgColor, iterator, comparator);
+    }
+    if (currentToon) {
+        currentToon.stop(update);
+    } else {
+        update();
+    }
 });
 
 

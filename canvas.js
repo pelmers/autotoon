@@ -169,8 +169,10 @@ function Canvas(id, maxWidth, maxHeight) {
 
         var lastTime; // the last time at which we drew any pixels
         function animator(t) {
-            if (stopped)
+            if (stopped) {
+                stopped();
                 return;
+            }
             if (lastTime === undefined) {
                 // first time animator is called, just record the time
                 lastTime = t;
@@ -187,8 +189,9 @@ function Canvas(id, maxWidth, maxHeight) {
             }
         }
         window.requestAnimationFrame(animator);
-        function stop() {
-            stopped = true;
+        // stop the animation and call onStop when the stop happens.
+        function stop(onStop) {
+            stopped = onStop || function() {};
         }
         return util.exports({}, [stop]);
     }
