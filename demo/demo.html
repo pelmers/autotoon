@@ -10,34 +10,59 @@
         </div>
         <canvas id="demoCanvas" width='600' height='400'></canvas>
         <div>
-            <div>
-                <button id="auto">Automate process</button>
-            </div>
-            <div>
-                <button id="blur">Gaussian blur</button>
-                TODO: radius and variance control
-            </div>
-            <button id="sobel">Sobel mask</button>
-            <button id="nonmax">Nonmaximum suppression</button>
-            <button id="laplace">Laplacian mask</button>
-            <div>
-                <button id="hysteresis">Hysteresis</button>
-                TODO: high/low threshold percentages
-            </div>
+            <button id="auto">Automate process</button>
             <button id="invert">Invert</button>
-            <div>
-                <button id="autotoon">Autotoon</button>
-                TODO: speed slider, direction choice, edge sorting,
-                black/white, stop btn
-            </div>
+        </div>
+        <div>
+            <button id="autotoon">Autotoon</button>
+            speed:<input type="range" id="toon_speed" value="1.0" step="0.05" min="0.05" max="10" required>
+            edge origin:
+            <select id="toon_dir">
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+            </select>
+            edge sorting:
+            <select id="toon_sort">
+                <option value="first">First encountered</option>
+                <option value="longest">Longest first</option>
+                <option value="random">Random</option>
+            </select>
+            background color:
+            <select id="toon_bg">
+                <option value="255">White</option>
+                <option value="0">Black</option>
+            </select>
         </div>
         <div>
             <button id="undo">Undo</button>
             <button id="reset">Reset</button>
             <button id="save">Save</button>
-            <button id="share">Share</button>
         </div>
 
+        Advanced options
+        <div style="border:solid; border-radius:3px">
+            <div>
+                <button id="blur">Gaussian blur</button>
+                radius:<input type="number" id="blur_radius" value="3" step="1" required>
+                sigma (strength):<input type="number" id="blur_sigma" value="1.0" step="0.1" required>
+            </div>
+            <div>
+                <button id="sobel">Sobel mask</button>
+            </div>
+            <div>
+                <button id="nonmax">Nonmaximum suppression</button>
+            </div>
+            <div>
+                <button id="laplace">Laplacian mask</button>
+            </div>
+            <div>
+                <button id="hysteresis">Hysteresis</button>
+                high:<input type="number" id="hys_hi" value="0.2" step="0.05" max="1" required>
+                low:<input type="number" id="hys_lo" value="0.5" step="0.05" max="1" required>
+            </div>
+        </div>
         <script src="../util.js"></script>
         <script src="../canvas.js"></script>
         <script src="../filters.js"></script>

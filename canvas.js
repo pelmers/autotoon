@@ -80,7 +80,8 @@ function Canvas(id, maxWidth, maxHeight) {
         var m = M.length,
             n = M[0].length,
             groupedPixels = {},
-            groups = [];
+            groups = [],
+            stopped = false;
         bgColor = (bgColor === undefined) ? 255 : bgColor;
         matrixIter = matrixIter || function(mat, cb) {
             for (var i = 0; i < mat.length; i++)
@@ -168,6 +169,8 @@ function Canvas(id, maxWidth, maxHeight) {
 
         var lastTime; // the last time at which we drew any pixels
         function animator(t) {
+            if (stopped)
+                return;
             if (lastTime === undefined) {
                 // first time animator is called, just record the time
                 lastTime = t;
@@ -184,7 +187,10 @@ function Canvas(id, maxWidth, maxHeight) {
             }
         }
         window.requestAnimationFrame(animator);
-        // TODO: return an object that allows pause/resume of animation
+        function stop() {
+            stopped = true;
+        }
+        return util.exports({}, [stop]);
     }
 
     return util.exports({}, [

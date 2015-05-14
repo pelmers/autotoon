@@ -157,8 +157,8 @@
      * and return the resulting matrix. This thins edges by only keeping points
      * connected to "strong" edges, as defined by the threshold function.
      */
-    function hysteresis(M) {
-        var threshold = estimateThreshold(M, 0.2, 0.5),
+    function hysteresis(M, high_percentage, low_percentage) {
+        var threshold = estimateThreshold(M, high_percentage, low_percentage),
             m = M.length,
             n = M[0].length,
             realEdges = util.zeros(m, n); // 0 if not connected to real edge, 1 if is
