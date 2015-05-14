@@ -94,6 +94,7 @@
                 return M[i][j];
             // previous and next values along the approximated gradient
             var prev, next;
+            // TODO: interpolate for missing angle rather than rounding to nearest
             switch (discretizeOrientation(G[i][j])) {
                 case 0:
                     prev = M[i][j-1];
@@ -122,12 +123,12 @@
     }
 
     /**
-     * Estimate upper and lower hysteresis thresholds, returning {hi: num, lo: num}.
+     * Estimate upper and lower hysteresis thresholds, returning {hi: num, lo:
+     * num}, where high_percentage is the percentage of pixels that will meet
+     * hi, and low_percentage is the ratio of lo to hi.
      */
-    function estimateThreshold(M) {
-        var high_percentage = 0.2, // percentage of pixels that meet high threshold
-            low_percentage = 0.5, // ratio of low threshold to high
-            histogram = util.zeros(1, 256)[0], // length 256 array of zeros
+    function estimateThreshold(M, high_percentage, low_percentage) {
+        var histogram = util.zeros(1, 256)[0], // length 256 array of zeros
             m = M.length,
             n = M[0].length;
         // construct histogram of pixel values
@@ -157,20 +158,25 @@
      * connected to "strong" edges, as defined by the threshold function.
      */
     function hysteresis(M) {
-        var threshold = estimateThreshold(M),
+        var threshold = estimateThreshold(M, 0.2, 0.5),
             m = M.length,
             n = M[0].length,
             realEdges = util.zeros(m, n); // 0 if not connected to real edge, 1 if is
         // Return array of neighbors of M[i][j] where M[n] >= threshold.lo
-        function collectNeighbors(i, j, group) {
-            group = (group === undefined) ? [] : group;
-            group.push(i * n + j);
-            util.traverseNeighborhood(M, i, j, function(val, r, c) {
-                if (val >= threshold.lo && !realEdges[r][c] && group.indexOf(r
-                            * n + c) === -1)
-                    collectNeighbors(r, c, group);
-            });
-            return group;
+        function collectNeighbors(i, j) {
+            var stack = [i * n + j];
+            realEdges[i][j] = 1;
+            while (stack.length > 0) {
+                var v = stack.pop();
+                util.traverseNeighborhood(M, Math.floor(v / n), v % n,
+                        function(val, r, c) {
+                    var pos = r * n + c;
+                    if (val >= threshold.lo && !realEdges[r][c]) {
+                        realEdges[r][c] = 1;
+                        stack.push(pos);
+                    }
+                });
+            }
         }
         for (var i = 0; i < m; i++) {
             for (var j = 0; j < n; j++) {
@@ -178,10 +184,7 @@
                 // edge that they are part of
                 // also we skip any pixels we have already marked as real
                 if (M[i][j] >= threshold.hi && !realEdges[i][j]) {
-                    var group = collectNeighbors(i, j);
-                    group.forEach(function(g) {
-                        realEdges[Math.floor(g / n)][g % n] = 1;
-                    });
+                    collectNeighbors(i, j);
                 }
             }
         }

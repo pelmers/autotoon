@@ -71,6 +71,8 @@ function Canvas(id, maxWidth, maxHeight) {
      * Animate the drawing of the edges of M, with speed given in pixels / ms.
      */
     function autoToon(M, speed) {
+        // TODO: refactor a lot
+        // TODO: different behavior for whether image is inverted
         var m = M.length,
             n = M[0].length,
             groupedPixels = {},
@@ -84,6 +86,7 @@ function Canvas(id, maxWidth, maxHeight) {
                 var v = stack.pop();
                 trace.push(v);
                 util.traverseNeighborhood(M, Math.floor(v / n), v % n, function(val, r, c) {
+                    // TODO: order neighbors
                     var pos = r * n + c;
                     if (val > 0 && groupedPixels[pos] === undefined) {
                         stack.push(pos);
