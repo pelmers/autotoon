@@ -71,12 +71,13 @@ function Canvas(id, maxWidth, maxHeight) {
      * bgColor defining the grayscale value of the background (either 0 or
      * 255), and matrixIter being a function which takes parameters M and
      * callback(i,j) and iterates over each element of M in some order, calling
-     * callback at each element, and comparator(edge1, edge2) provides a
-     * function to sort the edges found. Return an object that contains a
+     * callback at each element, and transform(edges) optionally provides a
+     * function to re-order or otherwise modify the list of edges found and is
+     * called before animation begins. Return an object that contains a
      * function .stop(cb) which stops the animation and calls cb on the next
      * frame.
      */
-    function autoToon(M, speed, bgColor, matrixIter, comparator) {
+    function autoToon(M, speed, bgColor, matrixIter, transform) {
         var m = M.length,
             n = M[0].length,
             groupedPixels = {},
@@ -116,7 +117,8 @@ function Canvas(id, maxWidth, maxHeight) {
             if (M[i][j] !== bgColor && groupedPixels[pos] === undefined)
                 groups.push(traceEdge(pos));
         });
-        groups.sort(comparator);
+        if (transform)
+            transform(groups);
 
         // before we begin drawing, we first clear the canvas
         reloadCanvas(matrix.toImageData(globalmat));
