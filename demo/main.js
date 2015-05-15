@@ -127,6 +127,9 @@ document.querySelector("#autotoon").addEventListener('click', function() {
         M = currentMatrix,
         n = M[0].length,
         m = M.length,
+        cartesianDistance = function(r1, c1, r2, c2) {
+            return Math.sqrt(Math.pow(r1 - r2, 2) + Math.pow(c1 - c2, 2));
+        },
         comparator = (function() {
             function first(_, __) {
                 return 0;
@@ -150,10 +153,10 @@ document.querySelector("#autotoon").addEventListener('click', function() {
             function center(e1, e2) {
                 var c1 = 0, c2 = 0;
                 e1.forEach(function(elem) {
-                    c1 += Math.abs(m / 2 - elem / n) + Math.abs(n / 2 - elem % n);
+                    c1 += cartesianDistance(m / 2, n / 2, elem / n, elem % n);
                 });
                 e2.forEach(function(elem) {
-                    c2 += Math.abs(m / 2 - elem / n) + Math.abs(n / 2 - elem % n);
+                    c2 += cartesianDistance(m / 2, n / 2, elem / n, elem % n);
                 });
                 return (c1 / e1.length) - (c2 / e2.length);
             }
@@ -180,6 +183,7 @@ document.querySelector("#reset").addEventListener('click', function() {
     c.reloadCanvas(originalData);
     matrixStack.push(currentMatrix);
     currentMatrix = util.toMatrix(originalData);
+    document.querySelector("#file").value = ""; // remove selected file
 });
 
 document.querySelector("#save").addEventListener('click', function() {
