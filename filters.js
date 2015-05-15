@@ -36,17 +36,42 @@
     }
 
     /**
-     * Round an angle in radians to the nearest 45 degrees.
+     * Interpolate the value of the neighbor at angle radians from i, j in M.
      */
-    function discretizeOrientation(angle) {
-        var deg = angle * 180 / Math.PI;
-        if (deg >= 22.5 && deg < 67.5)
-            return 45;
-        else if (deg >= 67.5 && deg < 112.5)
-            return 90;
-        else if (deg >= 112.5 && deg < 157.5)
-            return 135;
-        return 0;
+    function interpolateNeighbor(M, i, j, angle) {
+        // we transform angle from [0, 2pi) to [0, 8), so 1 radian : 45 degrees
+        // so flooring this value gives us direction of the previous value, and
+        // ceil-ing this value gives us the next value mod 8 in the
+        // neighborhood then we can index into the neighborhood by numbering:
+        // 3   2   1                                 (-1,-1)  (-1, 0)  (-1, 1)
+        // 4   -   0   then define the mapping to    (0, -1)     -     ( 0, 1)
+        // 5   6   7                                 (1, -1)  ( 1, 0)  ( 1, 1)
+
+        // Find value of neighbor to i, j in M in octant o in [0, 8)
+        function octantToNeighbor(o) {
+            // remark dy(o) == dx(o+2); this map returns the dy value
+            var map = function(x) {
+                switch (x % 8) {
+                    case 0:
+                    case 4:
+                        return 0;
+                    case 1:
+                    case 2:
+                    case 3:
+                        return -1;
+                    case 5:
+                    case 6:
+                    case 7:
+                        return 1;
+                }
+            };
+            return M[i + map(o)][j + map(o+2)];
+        }
+        var octant = angle * 4 / Math.PI,
+            ratio = octant % 1, // decimal part of octant
+            prev = octantToNeighbor(Math.floor(octant)),
+            next = octantToNeighbor(Math.ceil(octant));
+        return ratio * prev + (1 - ratio) * next;
     }
 
     /**
@@ -93,28 +118,8 @@
             if (i == 0 || j == 0 || i == M.length - 1 || j == M[0].length - 1)
                 return M[i][j];
             // previous and next values along the approximated gradient
-            var prev, next;
-            // TODO: interpolate for missing angle rather than rounding to nearest
-            switch (discretizeOrientation(G[i][j])) {
-                case 0:
-                    prev = M[i][j-1];
-                    next = M[i][j+1];
-                    break;
-                case 45:
-                    prev = M[i+1][j-1];
-                    next = M[i-1][j+1];
-                    break;
-                case 90:
-                    prev = M[i+1][j];
-                    next = M[i-1][j];
-                    break;
-                case 135:
-                    prev = M[i-1][j-1];
-                    next = M[i+1][j+1];
-                    break;
-                default:
-                    throw "Panic: non-exhaustive switch.";
-            }
+            var prev = interpolateNeighbor(M, i, j, G[i][j]),
+                next = interpolateNeighbor(M, i, j, Math.PI + G[i][j]);
             if (M[i][j] < prev || M[i][j] < next)
                 // suppress to 0 since it's non-maximum
                 return 0;
