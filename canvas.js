@@ -6,7 +6,6 @@ function Canvas(id, maxWidth, maxHeight) {
     var elem = document.getElementById(id), // canvas element
         ctx = elem.getContext('2d'),        // drawing context
         image = null;                       // Image object
-    ctx.globalCompositeOperation = "source-atop";
 
     /**
      * Load given image onto the canvas, replacing any existing content,
@@ -69,28 +68,27 @@ function Canvas(id, maxWidth, maxHeight) {
 
     /**
      * Animate the drawing of the edges of M, with speed given in pixels / ms,
-     * bgColor defining the grayscale value of the background (either 0 or 255),
-     * and matrixIter being a function which takes parameters M and
+     * bgColor defining the grayscale value of the background (either 0 or
+     * 255), and matrixIter being a function which takes parameters M and
      * callback(i,j) and iterates over each element of M in some order, calling
      * callback at each element, and comparator(edge1, edge2) provides a
-     * function to sort the edges found.
+     * function to sort the edges found. Return an object that contains a
+     * function .stop(cb) which stops the animation and calls cb on the next
+     * frame.
      */
     function autoToon(M, speed, bgColor, matrixIter, comparator) {
-        // TODO: refactor a lot
         var m = M.length,
             n = M[0].length,
             groupedPixels = {},
             groups = [],
-            stopped = false;
-        bgColor = (bgColor === undefined) ? 255 : bgColor;
-        matrixIter = matrixIter || function(mat, cb) {
-            for (var i = 0; i < mat.length; i++)
-                for (var j =  0; j < mat[0].length; j++)
-                    cb(i, j);
-        };
-        comparator = comparator || function(a, b) { return b.length - a.length; };
+            stopCallback = null,
+            num = 0, // current index in groups
+            idx = 0, // current index in groups[num]
+            // the current state of the animation, initially all background
+            globalmat = matrix.fromFunc(m, n, function() { return bgColor; }),
+            lastTime; // the last time at which we drew any pixels
 
-        // Trace the edge that contains pos and return its positions.
+        // Trace the edge that contains start and return its positions.
         function traceEdge(start) {
             var trace = [],
                 stack = [start];
@@ -98,7 +96,7 @@ function Canvas(id, maxWidth, maxHeight) {
             while (stack.length > 0) {
                 var v = stack.pop();
                 trace.push(v);
-                util.traverseNeighborhood(M, Math.floor(v / n), v % n, function(val, r, c) {
+                matrix.neighborhood(M, Math.floor(v / n), v % n, function(val, r, c) {
                     // TODO: order neighbors
                     var pos = r * n + c;
                     if (val !== bgColor && groupedPixels[pos] === undefined) {
@@ -119,13 +117,9 @@ function Canvas(id, maxWidth, maxHeight) {
         groups.sort(comparator);
 
         // we have partitioned the edges into groups, now we can draw them.
-        var num = 0, idx = 0; // current group number, index in current group
-        // the current state of the animation, initialize to blank
-        var globalmat = util.matrixFromFunc(m, n, function()
-                { return bgColor; });
-        reloadCanvas(util.toImageData(globalmat));
+        reloadCanvas(matrix.toImageData(globalmat));
 
-        // Return whether we have reached the end.
+        // Draw next toDraw pixels, return whether we have reached the end.
         function drawPixels(toDraw) {
             if (toDraw === 0)
                 return false;
@@ -134,7 +128,13 @@ function Canvas(id, maxWidth, maxHeight) {
                 minR = Infinity, maxR = -Infinity,
                 minC = Infinity, maxC = -Infinity,
                 leftover = toDraw - (end - begin);
-            // get the range of x and y for this chunk
+            /* Explanation: collect the next chunk of pixels into a submatrix
+             * and then call putImageData to the top left corner. To make sure
+             * we don't overwrite previous edges, we initialize submatrix from
+             * globalmatrix. Doing this lets the browser animate at a good
+             * speed (as opposed to drawing one pixel at a time).
+             */
+            // first initialize the bounds on this chunk
             for (var i = begin; i < end; i++) {
                 var r = Math.floor(groups[num][i] / n),
                     c = groups[num][i] % n;
@@ -145,31 +145,34 @@ function Canvas(id, maxWidth, maxHeight) {
             }
             var yRange = maxR - minR + 1,
                 xRange = maxC - minC + 1;
-            var submat = util.matrixFromFunc(yRange, xRange,
+            // create submatrix from the global matrix
+            var submat = matrix.fromFunc(yRange, xRange,
                     function(i, j) { return globalmat[i + minR][j + minC]; });
+            // update entries belonging to pixels in this chunk
             for (var i = begin; i < end; i++) {
                 var r = Math.floor(groups[num][i] / n),
                     c = groups[num][i] % n;
                 globalmat[r][c] = submat[r - minR][c - minC] = M[r][c];
             }
 
-            ctx.putImageData(util.toImageData(submat), minC, minR);
+            // draw this submatrix in the right spot on the canvas
+            ctx.putImageData(matrix.toImageData(submat), minC, minR);
+
+            // update counters and decide whether to continue
             idx = end;
-            // move to the next edge group
             if (idx === groups[num].length) {
                 idx = 0;
                 num++;
             }
-            // no more edges, signal completion
             if (num === groups.length)
                 return true;
             return drawPixels(leftover);
         }
 
-        var lastTime; // the last time at which we drew any pixels
+        // Manage the timings and call drawPixels as appropriate.
         function animator(t) {
-            if (stopped) {
-                stopped();
+            if (stopCallback) {
+                stopCallback();
                 return;
             }
             if (lastTime === undefined) {
@@ -183,15 +186,15 @@ function Canvas(id, maxWidth, maxHeight) {
                     if (!drawPixels(chunkSize))
                         window.requestAnimationFrame(animator);
                 } else {
+                    // we need more time to elapse before drawing
                     window.requestAnimationFrame(animator);
                 }
             }
         }
+        // begin animating
         window.requestAnimationFrame(animator);
-        // stop the animation and call onStop when the stop happens.
-        function stop(onStop) {
-            stopped = onStop || function() {};
-        }
+        // function to Stop the animation and register onStop callback.
+        function stop(onStop) { stopCallback = onStop || function() {}; }
         return util.exports({}, [stop]);
     }
 

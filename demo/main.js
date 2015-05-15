@@ -7,9 +7,10 @@ var originalData,
     limit = Math.max(screen.height, screen.width),
     c = Canvas("demoCanvas", limit, limit);
 
+// Reload the canvas with current matrix data and stop any animation.
 function reload() {
     function update() {
-        c.reloadCanvas(util.toImageData(currentMatrix, originalData));
+        c.reloadCanvas(matrix.toImageData(currentMatrix, originalData));
     }
     if (currentToon) {
         currentToon.stop(update);
@@ -25,7 +26,7 @@ document.querySelector("#submit").addEventListener('click', function() {
     matrixStack = [];
     function setParams() {
         originalData = c.getImageData();
-        currentMatrix = util.toGrayMatrix(originalData);
+        currentMatrix = util.toMatrix(originalData);
     }
     if (fileElement.files[0] !== undefined) {
         var reader = new FileReader();
@@ -178,7 +179,7 @@ document.querySelector("#undo").addEventListener('click', function() {
 document.querySelector("#reset").addEventListener('click', function() {
     c.reloadCanvas(originalData);
     matrixStack.push(currentMatrix);
-    currentMatrix = util.toGrayMatrix(originalData);
+    currentMatrix = util.toMatrix(originalData);
 });
 
 document.querySelector("#save").addEventListener('click', function() {
