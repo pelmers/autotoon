@@ -46,6 +46,7 @@
         for (var i = 0; i < m * n; i++) {
             var r = Math.floor(i / n),
                 c = i % n;
+            // r, g, b values
             newData.data[4*i] = newData.data[4*i+1] = newData.data[4*i+2] = M[r][c];
             // set alpha channel if originalData is given.
             newData.data[4*i + 3] = (originalData)?originalData.data[4*i + 3]:255;

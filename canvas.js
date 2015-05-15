@@ -98,7 +98,8 @@ function Canvas(id, maxWidth, maxHeight) {
                 var v = stack.pop();
                 trace.push(v);
                 matrix.neighborhood(M, Math.floor(v / n), v % n, function(val, r, c) {
-                    // TODO: order neighbors
+                    // TODO: order neighbors -- it would be better to try to
+                    // continue edges in the same direction if possible
                     var pos = r * n + c;
                     if (val !== bgColor && groupedPixels[pos] === undefined) {
                         stack.push(pos);
@@ -117,7 +118,7 @@ function Canvas(id, maxWidth, maxHeight) {
         });
         groups.sort(comparator);
 
-        // we have partitioned the edges into groups, now we can draw them.
+        // before we begin drawing, we first clear the canvas
         reloadCanvas(matrix.toImageData(globalmat));
 
         // Draw next toDraw pixels, return whether we have reached the end.
@@ -194,8 +195,6 @@ function Canvas(id, maxWidth, maxHeight) {
                 }
             }
         }
-        // begin animating
-        window.requestAnimationFrame(animator);
         // function to Stop the animation and register onStop callback.
         // if already done, call it immediately
         function stop(onStop) {
@@ -203,6 +202,8 @@ function Canvas(id, maxWidth, maxHeight) {
             if (done)
                 stopCallback();
         }
+        // begin animating
+        window.requestAnimationFrame(animator);
         return util.exports({}, [stop]);
     }
 

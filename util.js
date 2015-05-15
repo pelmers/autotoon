@@ -55,6 +55,7 @@
             return grayScale(getPixel(imageData, 4 * (r * imageData.width + c)));
         });
     }
+
     global.util = exports({}, [
             exports, clamp, getPixel, grayScale, toMatrix
     ]);
