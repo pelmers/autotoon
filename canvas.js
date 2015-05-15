@@ -86,7 +86,8 @@ function Canvas(id, maxWidth, maxHeight) {
             idx = 0, // current index in groups[num]
             // the current state of the animation, initially all background
             globalmat = matrix.fromFunc(m, n, function() { return bgColor; }),
-            lastTime; // the last time at which we drew any pixels
+            lastTime, // the last time at which we drew any pixels
+            done = false; // is the animation complete?
 
         // Trace the edge that contains start and return its positions.
         function traceEdge(start) {
@@ -164,8 +165,10 @@ function Canvas(id, maxWidth, maxHeight) {
                 idx = 0;
                 num++;
             }
-            if (num === groups.length)
+            if (num === groups.length) {
+                done = true;
                 return true;
+            }
             return drawPixels(leftover);
         }
 
@@ -194,7 +197,12 @@ function Canvas(id, maxWidth, maxHeight) {
         // begin animating
         window.requestAnimationFrame(animator);
         // function to Stop the animation and register onStop callback.
-        function stop(onStop) { stopCallback = onStop || function() {}; }
+        // if already done, call it immediately
+        function stop(onStop) {
+            stopCallback = onStop || function() {};
+            if (done)
+                stopCallback();
+        }
         return util.exports({}, [stop]);
     }
 
