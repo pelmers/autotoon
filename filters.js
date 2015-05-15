@@ -4,9 +4,9 @@
     /**
      * Return new matrix where each element is 255 - old element.
      */
-    function inverted(matrix) {
-        return util.matrixFromFunc(matrix.length, matrix[0].length, function(i, j) {
-            return 255 - matrix[i][j];
+    function inverted(M) {
+        return matrix.fromFunc(M.length, M[0].length, function(i, j) {
+            return 255 - M[i][j];
         });
     }
 
@@ -19,7 +19,7 @@
         var k = 2 * radius + 1,
             mean = k / 2,
             sum = 0,
-            kernel = util.matrixFromFunc(k, k, function(x, y) {
+            kernel = matrix.fromFunc(k, k, function(x, y) {
                 return Math.exp(-0.5 * (Math.pow((x - mean) / sigma, 2) +
                             Math.pow((y - mean) / sigma, 2)) ) / (2 * Math.PI *
                         sigma * sigma);
@@ -32,7 +32,7 @@
         for (var x = 0; x < k; x++)
             for (var y = 0; y < k; y++)
                 kernel[x][y] /= sum;
-        return util.matrixConvolution(kernel, M, 0, 255);
+        return matrix.convolution(kernel, M, 0, 255);
     }
 
     /**
@@ -57,12 +57,12 @@
         // gradient approximation masks for x and y directions
         var Gx = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]],
             Gy = [[1, 2, 1], [0, 0, 0], [-1, -2, -1]],
-            Cx = util.matrixConvolution(Gx, M),
-            Cy = util.matrixConvolution(Gy, M),
-            Csum = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
+            Cx = matrix.convolution(Gx, M),
+            Cy = matrix.convolution(Gy, M),
+            Csum = matrix.fromFunc(Cx.length, Cx[0].length, function(i, j) {
                 return util.clamp(Math.abs(Cx[i][j]) + Math.abs(Cy[i][j]), 0, 255);
             }),
-            G = util.matrixFromFunc(Cx.length, Cx[0].length, function(i, j) {
+            G = matrix.fromFunc(Cx.length, Cx[0].length, function(i, j) {
                 if (Cx[i][j] == 0)
                     return (Cy[i][j]) ? Math.PI / 2 : 0;
                 return Math.atan(Math.abs(Cy[i][j]) / Math.abs(Cx[i][j]));
@@ -74,7 +74,7 @@
      * Apply a discrete 5x5 Laplacian mask on M.
      */
     function laplaceMask(M) {
-        return util.matrixConvolution([
+        return matrix.convolution([
                 [-1, -1, -1, -1, -1],
                 [-1, -1, -1, -1, -1],
                 [-1, -1, 24, -1, -1],
@@ -88,7 +88,7 @@
      * edge points lying on non-maximal gradients are set to 0.
      */
     function nonMaxSuppression(M, G) {
-        return util.matrixFromFunc(M.length, M[0].length, function(i, j) {
+        return matrix.fromFunc(M.length, M[0].length, function(i, j) {
             // don't suppress the borders
             if (i == 0 || j == 0 || i == M.length - 1 || j == M[0].length - 1)
                 return M[i][j];
@@ -128,7 +128,7 @@
      * hi, and low_percentage is the ratio of lo to hi.
      */
     function estimateThreshold(M, high_percentage, low_percentage) {
-        var histogram = util.zeros(1, 256)[0], // length 256 array of zeros
+        var histogram = matrix.zeros(1, 256)[0], // length 256 array of zeros
             m = M.length,
             n = M[0].length;
         // construct histogram of pixel values
@@ -161,14 +161,14 @@
         var threshold = estimateThreshold(M, high_percentage, low_percentage),
             m = M.length,
             n = M[0].length,
-            realEdges = util.zeros(m, n); // 0 if not connected to real edge, 1 if is
+            realEdges = matrix.zeros(m, n); // 0 if not connected to real edge, 1 if is
         // Return array of neighbors of M[i][j] where M[n] >= threshold.lo
         function collectNeighbors(i, j) {
             var stack = [i * n + j];
             realEdges[i][j] = M[i][j];
             while (stack.length > 0) {
                 var v = stack.pop();
-                util.traverseNeighborhood(M, Math.floor(v / n), v % n,
+                matrix.neighborhood(M, Math.floor(v / n), v % n,
                         function(val, r, c) {
                     var pos = r * n + c;
                     if (val >= threshold.lo && !realEdges[r][c]) {
