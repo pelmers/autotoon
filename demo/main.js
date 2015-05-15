@@ -130,41 +130,48 @@ document.querySelector("#autotoon").addEventListener('click', function() {
         cartesianDistance = function(r1, c1, r2, c2) {
             return Math.sqrt(Math.pow(r1 - r2, 2) + Math.pow(c1 - c2, 2));
         },
-        comparator = (function() {
-            function first(_, __) {
-                return 0;
+        transform = (function() {
+            function longest(edges) {
+                edges.sort(function(e1, e2) { return e2.length - e1.length; });
             }
-            function longest(e1, e2) {
-                return e2.length - e1.length;
+            function random(edges) {
+                // Fisher-Yates shuffle, description on Wikipedia.
+                for (var i = 0; i < edges.length - 1; i++) {
+                    var j = Math.floor(Math.random() * (edges.length - i)) + i,
+                        temp = edges[i];
+                    edges[i] = edges[j];
+                    edges[j] = temp;
+                }
             }
-            function random(_, __) {
-                return Math.random() - Math.random();
-            }
-            function darkest(e1, e2) {
-                var s1 = 0, s2 = 0;
-                e1.forEach(function(elem) {
-                    s1 += Math.abs(bgColor - M[Math.floor(elem / n)][elem % n]);
+            function darkest(edges) {
+                edges.sort(function(e1, e2) {
+                    var s1 = 0, s2 = 0;
+                    e1.forEach(function(elem) {
+                        s1 += Math.abs(bgColor - M[Math.floor(elem / n)][elem % n]);
+                    });
+                    e2.forEach(function(elem) {
+                        s2 += Math.abs(bgColor - M[Math.floor(elem / n)][elem % n]);
+                    });
+                    return (s2 / e2.length) - (s1 / e1.length);
                 });
-                e2.forEach(function(elem) {
-                    s2 += Math.abs(bgColor - M[Math.floor(elem / n)][elem % n]);
-                });
-                return (s2 / e2.length) - (s1 / e1.length);
             }
-            function center(e1, e2) {
-                var c1 = 0, c2 = 0;
-                e1.forEach(function(elem) {
-                    c1 += cartesianDistance(m / 2, n / 2, elem / n, elem % n);
+            function center(edges) {
+                edges.sort(function(e1, e2) {
+                    var c1 = 0, c2 = 0;
+                    e1.forEach(function(elem) {
+                        c1 += cartesianDistance(m / 2, n / 2, elem / n, elem % n);
+                    });
+                    e2.forEach(function(elem) {
+                        c2 += cartesianDistance(m / 2, n / 2, elem / n, elem % n);
+                    });
+                    return (c1 / e1.length) - (c2 / e2.length);
                 });
-                e2.forEach(function(elem) {
-                    c2 += cartesianDistance(m / 2, n / 2, elem / n, elem % n);
-                });
-                return (c1 / e1.length) - (c2 / e2.length);
             }
-            return util.exports({}, [first, longest, random, darkest, center])[sort];
+            return util.exports({}, [longest, random, darkest, center])[sort];
         })(),
         update = function() {
             currentToon = c.autoToon(currentMatrix, speed, bgColor,
-                    iterators[direction], comparator);
+                    iterators[direction], transform);
         };
     if (currentToon) {
         currentToon.stop(update);
