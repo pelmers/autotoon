@@ -1,11 +1,35 @@
-var originalData,
-    currentMatrix,
-    currentSobel,
-    currentToon,
-    matrixStack = [],
-    // limit the canvas size to the screen's size
+var originalData, // original image data
+    currentMatrix,// current grayscale matrix displayed
+    currentSobel, // last result of sobel mask
+    currentToon,  // currently animating autotoon
+    matrixStack = [], // stack of previous states for undo function
+    // keep canvas from stretching too big
     limit = Math.max(screen.height, screen.width),
-    c = Canvas("demoCanvas", limit, limit);
+    c = Canvas("demoCanvas", limit, limit),
+    // matrix traversal orders
+    iterators = {
+        "top": function(M, cb) {
+            for (var i = 0; i < M.length; i++)
+                for (var j = 0; j < M[0].length; j++)
+                    cb(i, j);
+        },
+        "bottom": function(M, cb) {
+            for (var i = M.length - 1; i >= 0; i--)
+                for (var j = 0; j < M[0].length; j++)
+                    cb(i, j);
+        },
+        "left": function(M, cb) {
+            for (var j = 0; j < M[0].length; j++)
+                for (var i = 0; i < M.length; i++)
+                    cb(i, j);
+        },
+        "right": function(M, cb) {
+            for (var j = M[0].length - 1; j >= 0; j--)
+                for (var i = 0; i < M.length; i++)
+                    cb(i, j);
+        },
+    };
+
 
 // Reload the canvas with current matrix data and stop any animation.
 function reload() {
@@ -20,22 +44,24 @@ function reload() {
     }
 }
 
+// Set our global variables from what is on the canvas.
+function setFields() {
+    matrixStack = [];
+    originalData = c.getImageData();
+    currentMatrix = util.toMatrix(originalData);
+}
+
 document.querySelector("#submit").addEventListener('click', function() {
     var fileElement = document.querySelector("#file"),
         urlElement = document.querySelector("#url");
-    matrixStack = [];
-    function setParams() {
-        originalData = c.getImageData();
-        currentMatrix = util.toMatrix(originalData);
-    }
     if (fileElement.files[0] !== undefined) {
         var reader = new FileReader();
         reader.onload = function(e) {
-            c.loadImage(e.target.result, true, setParams);
+            c.loadImage(e.target.result, true, setFields);
         };
         reader.readAsDataURL(fileElement.files[0]);
     } else {
-        c.loadImage(urlElement.value, false, setParams);
+        c.loadImage(urlElement.value, false, setFields);
     }
 });
 
@@ -95,29 +121,6 @@ document.querySelector("#invert").addEventListener('click', function() {
     reload();
 });
 
-var iterators = {
-    "top": function(M, cb) {
-        for (var i = 0; i < M.length; i++)
-            for (var j = 0; j < M[0].length; j++)
-                cb(i, j);
-    },
-    "bottom": function(M, cb) {
-        for (var i = M.length - 1; i >= 0; i--)
-            for (var j = 0; j < M[0].length; j++)
-                cb(i, j);
-    },
-    "left": function(M, cb) {
-        for (var j = 0; j < M[0].length; j++)
-            for (var i = 0; i < M.length; i++)
-                cb(i, j);
-    },
-    "right": function(M, cb) {
-        for (var j = M[0].length - 1; j >= 0; j--)
-            for (var i = 0; i < M.length; i++)
-                cb(i, j);
-    },
-};
-
 document.querySelector("#autotoon").addEventListener('click', function() {
     matrixStack.push(currentMatrix);
     var speed = parseFloat(document.querySelector("#toon_speed").value),
@@ -167,6 +170,7 @@ document.querySelector("#autotoon").addEventListener('click', function() {
                     return (c1 / e1.length) - (c2 / e2.length);
                 });
             }
+            // now we select one of these functions and return it
             return util.exports({}, [longest, random, darkest, center])[sort];
         })(),
         update = function() {
@@ -179,7 +183,6 @@ document.querySelector("#autotoon").addEventListener('click', function() {
         update();
     }
 });
-
 
 document.querySelector("#undo").addEventListener('click', function() {
     currentMatrix = matrixStack.pop();
@@ -195,4 +198,28 @@ document.querySelector("#reset").addEventListener('click', function() {
 
 document.querySelector("#save").addEventListener('click', function() {
     window.location.href = c.getElem().toDataURL("image/png");
+});
+
+document.querySelector("#share").addEventListener('click', function() {
+    var src = encodeURI(c.getImage().src),
+        loc = window.location.href,
+        query = loc.indexOf("?"),
+        url = loc.slice(0, (query > 0) ? query: loc.length) + "?src=" + src,
+        textArea = document.querySelector("#sharetext");
+    if (src.length > 2000) {
+        alert("Too long. Try submitting file by URL, then sharing.");
+    } else {
+        textArea.value = url;
+        textArea.style.display = 'block';
+    }
+});
+
+// if src param is given, try to load canvas from that
+window.location.search.slice(1).split("&").forEach(function(param) {
+    if (!param) return;
+    var split = param.split("="),
+        key = split[0],
+        val = decodeURI(split[1]);
+    if (key === "src")
+        c.loadImage(val, val.indexOf("data:image/") !== -1, setFields);
 });
