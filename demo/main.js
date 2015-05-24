@@ -133,6 +133,28 @@ document.querySelector("#autotoon").addEventListener('click', function() {
         cartesianDistance = function(r1, c1, r2, c2) {
             return Math.sqrt(Math.pow(r1 - r2, 2) + Math.pow(c1 - c2, 2));
         },
+        // Number of rows the edge spans
+        ySpan = function(edge) {
+            var yMin = Infinity, yMax = -Infinity;
+            edge.forEach(function(elem) {
+                var r = elem / n;
+                yMin = Math.min(yMin, r);
+                yMax = Math.max(yMax, r);
+            });
+            console.log(yMax, yMin);
+            return yMax - yMin;
+        },
+        // Number of cols the edge spans
+        xSpan = function(edge) {
+            var xMin = Infinity, xMax = -Infinity;
+            edge.forEach(function(elem) {
+                var c = elem % n;
+                xMin = Math.min(xMin, c);
+                xMax = Math.max(xMax, c);
+            });
+            console.log(xMax, xMin);
+            return xMax - xMin;
+        },
         transform = (function() {
             function longest(edges) {
                 edges.sort(function(e1, e2) { return e2.length - e1.length; });
@@ -170,8 +192,15 @@ document.querySelector("#autotoon").addEventListener('click', function() {
                     return (c1 / e1.length) - (c2 / e2.length);
                 });
             }
+            function widest(edges) {
+                // We sort by the span of the edge: the x-range + y-range
+                edges.sort(function(e1, e2) {
+                    return cartesianDistance(ySpan(e2), xSpan(e2), 0, 0) -
+                        cartesianDistance(ySpan(e1), xSpan(e1), 0, 0);
+                });
+            }
             // now we select one of these functions and return it
-            return util.exports({}, [longest, random, darkest, center])[sort];
+            return util.exports({}, [longest, random, darkest, center, widest])[sort];
         })(),
         update = function() {
             currentToon = c.autoToon(currentMatrix, speed, bgColor,
