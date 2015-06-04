@@ -25,6 +25,7 @@
             return num;
         }
     }
+
     /**
      * Get the rgba value of pixel i in given image data.
      * If i is out of bounds, then return (0,0,0,0).
