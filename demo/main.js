@@ -256,5 +256,11 @@ window.location.search.slice(1).split("&").forEach(function(param) {
         key = split[0],
         val = decodeURI(split[1]);
     if (key === "src")
-        c.loadImage(val, val.indexOf("data:image/") !== -1, setFields);
+        c.loadImage(val, val.indexOf("data:image/") !== -1, function() {
+            setFields();
+            if (window.location.hash === "#auto") {
+                document.querySelector("#auto").click();
+                document.querySelector("#autotoon").click();
+            }
+        });
 });
