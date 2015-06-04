@@ -111,7 +111,7 @@ function Canvas(id, maxWidth, maxHeight) {
             return trace;
         }
 
-        // partition the image into edges in some traversal order
+        // Partition the image into edges in some traversal order
         matrixIter(M, function(i, j) {
             var pos = i * n + j;
             if (M[i][j] !== bgColor && groupedPixels[pos] === undefined)
@@ -120,7 +120,7 @@ function Canvas(id, maxWidth, maxHeight) {
         if (transform)
             transform(groups);
 
-        // before we begin drawing, we first clear the canvas
+        // Before we begin drawing, we first clear the canvas.
         reloadCanvas(matrix.toImageData(globalmat));
 
         // Draw next toDraw pixels, return whether we have reached the end.
@@ -138,7 +138,7 @@ function Canvas(id, maxWidth, maxHeight) {
              * globalmatrix. Doing this lets the browser animate at a good
              * speed (as opposed to drawing one pixel at a time).
              */
-            // first initialize the bounds on this chunk
+            // First initialize the bounds on this chunk
             for (var i = begin; i < end; i++) {
                 var r = Math.floor(groups[num][i] / n),
                     c = groups[num][i] % n;
@@ -149,10 +149,10 @@ function Canvas(id, maxWidth, maxHeight) {
             }
             var yRange = maxR - minR + 1,
                 xRange = maxC - minC + 1;
-            // create submatrix from the global matrix
+            // Create submatrix from the global matrix
             var submat = matrix.fromFunc(yRange, xRange,
                     function(i, j) { return globalmat[i + minR][j + minC]; });
-            // update entries belonging to pixels in this chunk
+            // Update entries belonging to pixels in this chunk
             for (var i = begin; i < end; i++) {
                 var r = Math.floor(groups[num][i] / n),
                     c = groups[num][i] % n;
@@ -162,7 +162,7 @@ function Canvas(id, maxWidth, maxHeight) {
             // draw this submatrix in the right spot on the canvas
             ctx.putImageData(matrix.toImageData(submat), minC, minR);
 
-            // update counters and decide whether to continue
+            // Update counters and decide whether to continue
             idx = end;
             if (idx === groups[num].length) {
                 idx = 0;
@@ -182,7 +182,7 @@ function Canvas(id, maxWidth, maxHeight) {
                 return;
             }
             if (lastTime === undefined) {
-                // first time animator is called, just record the time
+                // First time animator is called, just record the time
                 lastTime = t;
                 window.requestAnimationFrame(animator);
             } else {
@@ -192,19 +192,19 @@ function Canvas(id, maxWidth, maxHeight) {
                     if (!drawPixels(chunkSize))
                         window.requestAnimationFrame(animator);
                 } else {
-                    // we need more time to elapse before drawing
+                    // We need more time to elapse before drawing
                     window.requestAnimationFrame(animator);
                 }
             }
         }
-        // function to Stop the animation and register onStop callback.
-        // if already done, call it immediately
+        // Stop the animation and register onStop callback. If animation
+        // already done, call it immediately.
         function stop(onStop) {
             stopCallback = onStop || function() {};
             if (done)
                 stopCallback();
         }
-        // begin animating
+        // Begin animating.
         window.requestAnimationFrame(animator);
         return util.exports({}, [stop]);
     }

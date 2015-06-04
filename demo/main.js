@@ -85,6 +85,12 @@ document.querySelector("#blur").addEventListener('click', function() {
     reload();
 });
 
+document.querySelector("#sharpen").addEventListener('click', function() {
+    matrixStack.push(currentMatrix);
+    currentMatrix = filters.sharpenMask(currentMatrix);
+    reload();
+});
+
 document.querySelector("#sobel").addEventListener('click', function() {
     matrixStack.push(currentMatrix);
     currentSobel = filters.sobelMask(currentMatrix);

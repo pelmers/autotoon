@@ -36,10 +36,21 @@
     }
 
     /**
+     * Apply an image sharpening mask to the matrix M. Return the new matrix.
+     */
+    function sharpenMask(M) {
+        return matrix.convolution([
+                [ 0, -1,  0],
+                [-1,  5, -1],
+                [ 0, -1,  0]
+        ], M, 0, 255);
+    }
+
+    /**
      * Interpolate the value of the neighbor at angle radians from i, j in M.
      */
     function interpolateNeighbor(M, i, j, angle) {
-        // we transform angle from [0, 2pi) to [0, 8), so 1 radian : 45 degrees
+        // We transform angle from [0, 2pi) to [0, 8), so 1 radian : 45 degrees
         // so flooring this value gives us direction of the previous value, and
         // ceil-ing this value gives us the next value mod 8 in the
         // neighborhood then we can index into the neighborhood by numbering:
@@ -68,7 +79,7 @@
             return M[i + map(o)][j + map(o+2)];
         }
         var octant = angle * 4 / Math.PI,
-            ratio = octant % 1, // decimal part of octant
+            ratio = octant % 1, // Use a trick to get decimal part of octant
             prev = octantToNeighbor(Math.floor(octant)),
             next = octantToNeighbor(Math.ceil(octant));
         return ratio * prev + (1 - ratio) * next;
@@ -136,24 +147,24 @@
         var histogram = matrix.zeros(1, 256)[0], // length 256 array of zeros
             m = M.length,
             n = M[0].length;
-        // construct histogram of pixel values
+        // Construct histogram of pixel values
         M.forEach(function(r) {
             r.forEach(function(e) {
                 histogram[e]++;
             });
         });
-        // number of pixels we want to target
+        // Compute number of pixels we want to target.
         var pixels = (m * n - histogram[0]) * high_percentage,
             high_cutoff = 0,
             i = histogram.length,
             j = 1;
         while (high_cutoff < pixels)
             high_cutoff += histogram[i--];
-        // increment j up to first non-zero frequency (so we ignore those)
+        // Increment j up to first non-zero frequency (so we ignore those).
         while (histogram[j] == 0)
             j++;
         j += i * low_percentage;
-        //j = (i * low_percentage + j) * low_percentage;
+        // j = (i * low_percentage + j) * low_percentage;
         return { hi: i, lo: j };
     }
 
@@ -167,7 +178,7 @@
             m = M.length,
             n = M[0].length,
             realEdges = matrix.zeros(m, n); // 0 if not connected to real edge, 1 if is
-        // Return array of neighbors of M[i][j] where M[n] >= threshold.lo
+        // Return array of neighbors of M[i][j] where M[n] >= threshold.lo.
         function collectNeighbors(i, j) {
             var stack = [i * n + j];
             realEdges[i][j] = M[i][j];
@@ -185,9 +196,9 @@
         }
         for (var i = 0; i < m; i++) {
             for (var j = 0; j < n; j++) {
-                // we consider that these are "strong" pixels, then we trace the
-                // edge that they are part of
-                // also we skip any pixels we have already marked as real
+                // We consider that these are "strong" pixels, then we trace
+                // the edge that they are part of. Also we skip any pixels we
+                // have already marked as real
                 if (M[i][j] >= threshold.hi && !realEdges[i][j]) {
                     collectNeighbors(i, j);
                 }
@@ -198,6 +209,6 @@
 
     global.filters = util.exports({}, [
             inverted, gaussianMask, sobelMask, laplaceMask, nonMaxSuppression,
-            hysteresis
+            hysteresis, sharpenMask
     ]);
 })(this);
