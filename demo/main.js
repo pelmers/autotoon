@@ -225,9 +225,10 @@ document.querySelector("#undo").addEventListener('click', function() {
 });
 
 document.querySelector("#reset").addEventListener('click', function() {
-    c.reloadCanvas(originalData);
     matrixStack.push(currentMatrix);
     currentMatrix = util.toMatrix(originalData);
+    reload();
+    c.reloadCanvas(originalData);
     document.querySelector("#file").value = ""; // remove selected file
 });
 
