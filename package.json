@@ -1,0 +1,21 @@
+{
+    "name": "autotoon",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "repository": "git@github.com:pelmers/autotoon.git",
+    "author": "Peter Elmers <peter.elmers@yahoo.com>",
+    "license": "MIT",
+    "scripts": {
+        "build": "webpack --config webpack.config.js",
+        "format": "node_modules/.bin/prettier --ignore-path .gitignore --write '.'"
+    },
+    "devDependencies": {
+        "prettier": "^2.2.1",
+        "ts-loader": "^9.1.1",
+        "tslint": "^6.1.3",
+        "tslint-loader": "^3.5.4",
+        "typescript": "^4.2.4",
+        "webpack": "^5.36.2",
+        "webpack-cli": "^4.6.0"
+    }
+}
