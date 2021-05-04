@@ -1,2 +1,2 @@
 Interactive edge detection and drawing.
-See the [demo](http://pelmers.github.io/autotoon/).
+See the [demo](https://autotoon.pelmers.com).
