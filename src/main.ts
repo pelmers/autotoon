@@ -11,6 +11,8 @@ import {
 import { Mat, toImageData } from './matrix';
 import { toMatrix, clamp } from './util';
 
+declare const plausible: any;
+
 const getMaxWidth = () =>
     document.querySelector('body').getBoundingClientRect().width - 20;
 const getMaxHeight = () => window.screen.height - 50;
@@ -27,7 +29,8 @@ const $autotoonGroup = document.querySelector<HTMLDivElement>('#autotoonGroup');
 const $toonSpeed = document.querySelector<HTMLInputElement>('#toon_speed');
 const $toonDir = document.querySelector<HTMLInputElement>('#toon_dir');
 const $toonSort = document.querySelector<HTMLInputElement>('#toon_sort');
-const $reset = document.querySelector<HTMLInputElement>('#reset');
+const $reset = document.querySelector<HTMLButtonElement>('#reset');
+const $clearImage = document.querySelector<HTMLButtonElement>('#clear-image');
 
 let sharpenLevel = 0;
 let c: CanvasType;
@@ -272,8 +275,10 @@ $autotoon.addEventListener('click', function () {
         }
     );
     $autotoon.textContent = 'Stop';
+    plausible('autotoon');
 });
 
 $reset.addEventListener('click', () => reset(true));
+$clearImage.addEventListener('click', () => window.location.reload());
 
 // TODO add a loading spinner as well, and a way to save video?

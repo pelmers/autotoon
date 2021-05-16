@@ -62,10 +62,24 @@
                     <option value="random">Random</option>
                 </select>
             </div>
-            <div>
+            <div id="resetGroup">
                 <button id="reset">Reset</button>
+                <button id="clear-image">Clear</button>
             </div>
         </div>
-        <script src="/dist/index.bundle.js"></script>
+        <script async defer src="/dist/index.bundle.js"></script>
+        <script
+            async
+            defer
+            data-domain="autotoon.pelmers.com"
+            src="https://plausible.pelmers.com/js/plausible.js"
+        ></script>
+        <script>
+            window.plausible =
+                window.plausible ||
+                function () {
+                    (window.plausible.q = window.plausible.q || []).push(arguments);
+                };
+        </script>
     </body>
 </html>

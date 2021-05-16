@@ -91,11 +91,13 @@ body {
     display: none;
 }
 
-#edgesGroup {
+#edgesGroup,
+#resetGroup {
     display: flex;
     justify-content: space-between;
 }
 
-#edgesGroup > button {
+#edgesGroup > button,
+#resetGroup > button {
     flex-basis: 20%;
 }
