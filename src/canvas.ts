@@ -1,10 +1,32 @@
 import { fromFunc, Mat, neighborhood, toImageData } from './matrix';
 import { clamp } from './util';
 
+export type CanvasType = {
+    // exported functions on Canvas objects
+    loadImage: (imgSource: string, isDataURI: boolean, callback: () => void) => void;
+    getImage: () => HTMLImageElement;
+    getImageData: () => ImageData;
+    reloadCanvas: (data: ImageData) => void;
+    getContext: () => CanvasRenderingContext2D;
+    getElem: () => HTMLCanvasElement;
+    autoToon: (
+        M: Mat,
+        speed: number,
+        bgColor: number,
+        matrixIter: (arg0: Mat, arg1: (i: number, j: number) => void) => void,
+        transform: (arg0: number[][]) => void,
+        onComplete?: () => void
+    ) => { stop: (onStop: () => void) => void };
+};
 /**
  * Wrap a canvas object with given ID and maximum parameters.
  */
-export default function Canvas(id: string, maxWidth: number, maxHeight: number) {
+export default function Canvas(
+    id: string,
+    maxWidth: number,
+    maxHeight: number,
+    maxPixels: number
+): CanvasType {
     var elem = document.getElementById(id) as HTMLCanvasElement, // canvas element
         ctx = elem.getContext('2d'), // drawing context
         image: HTMLImageElement = null; // Image object
@@ -14,7 +36,7 @@ export default function Canvas(id: string, maxWidth: number, maxHeight: number) 
      * and resize the canvas to fit the picture.
      * Call callback once the image is loaded.
      */
-    function loadImage(imgSource: string, isDataURI: any, callback: () => void) {
+    function loadImage(imgSource: string, isDataURI: boolean, callback: () => void) {
         function handler() {
             // downscale factor image to maxWidth or maxHeight if it's too big
             var scaling = clamp(
@@ -24,6 +46,12 @@ export default function Canvas(id: string, maxWidth: number, maxHeight: number) 
             );
             elem.width = Math.floor(scaling * image.width);
             elem.height = Math.floor(scaling * image.height);
+            const size = elem.width * elem.height;
+            if (size > maxPixels) {
+                const maxScale = Math.sqrt(size / maxPixels);
+                elem.width = Math.floor(elem.width / maxScale);
+                elem.height = Math.floor(elem.height / maxScale);
+            }
             ctx.drawImage(image, 0, 0, elem.width, elem.height);
             if (callback) callback();
         }
@@ -90,7 +118,8 @@ export default function Canvas(id: string, maxWidth: number, maxHeight: number) 
         speed: number,
         bgColor: number,
         matrixIter: (arg0: Mat, arg1: (i: number, j: number) => void) => void,
-        transform: (arg0: number[][]) => void
+        transform: (arg0: number[][]) => void,
+        onComplete?: () => void
     ) {
         var m = M.length,
             n = M[0].length,
@@ -187,6 +216,7 @@ export default function Canvas(id: string, maxWidth: number, maxHeight: number) 
             }
             if (num === groups.length) {
                 done = true;
+                onComplete && onComplete();
                 return true;
             }
             return drawPixels(leftover);
@@ -196,6 +226,8 @@ export default function Canvas(id: string, maxWidth: number, maxHeight: number) 
         function animator(t: number) {
             if (stopCallback) {
                 stopCallback();
+                done = true;
+                onComplete && onComplete();
                 return;
             }
             if (lastTime === undefined) {

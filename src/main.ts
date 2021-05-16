@@ -1,4 +1,4 @@
-import Canvas from './canvas';
+import Canvas, { CanvasType } from './canvas';
 import {
     gaussianMask,
     sobelMask,
@@ -11,14 +11,31 @@ import {
 import { Mat, toImageData } from './matrix';
 import { toMatrix, clamp } from './util';
 
+const getMaxWidth = () =>
+    document.querySelector('body').getBoundingClientRect().width - 20;
+const getMaxHeight = () => window.screen.height - 50;
+const getMaxSize = () => 900000;
+
+const $demoCanvas = document.querySelector<HTMLCanvasElement>('#demoCanvas');
+const $file = document.querySelector<HTMLInputElement>('#file');
+const $dragDrop = document.querySelector<HTMLDivElement>('#dragdrop');
+const $findEdges = document.querySelector<HTMLButtonElement>('#find-edges');
+const $moreEdges = document.querySelector<HTMLButtonElement>('#more-edges');
+const $lessEdges = document.querySelector<HTMLButtonElement>('#less-edges');
+const $autotoon = document.querySelector<HTMLButtonElement>('#autotoon');
+const $autotoonGroup = document.querySelector<HTMLDivElement>('#autotoonGroup');
+const $toonSpeed = document.querySelector<HTMLInputElement>('#toon_speed');
+const $toonDir = document.querySelector<HTMLInputElement>('#toon_dir');
+const $toonSort = document.querySelector<HTMLInputElement>('#toon_sort');
+const $reset = document.querySelector<HTMLInputElement>('#reset');
+
+let sharpenLevel = 0;
+let c: CanvasType;
 var originalData: ImageData, // original image data
+    originalMatrix: Mat, // original image matrix in grayscale
     currentMatrix: Mat, // current grayscale matrix displayed
     currentSobel: { S: Mat; G: Mat }, // last result of sobel mask
     currentToon: { stop: (onStop: () => void) => void }, // currently animating autotoon
-    matrixStack: Mat[] = [], // stack of previous states for undo function
-    // keep canvas from stretching too big
-    limit = Math.max(screen.height, screen.width),
-    c = Canvas('demoCanvas', limit, limit),
     // matrix traversal orders
     iterators = {
         top: function (M: Mat, cb: (arg0: number, arg1: number) => void) {
@@ -54,96 +71,114 @@ function reload() {
 
 // Set our global variables from what is on the canvas.
 function setFields() {
-    matrixStack = [];
     originalData = c.getImageData();
-    currentMatrix = toMatrix(originalData);
+    originalMatrix = toMatrix(originalData);
+    currentMatrix = originalMatrix;
 }
 
-document.querySelector('#submit').addEventListener('click', function () {
-    var fileElement = document.querySelector<HTMLInputElement>('#file'),
-        urlElement = document.querySelector<HTMLInputElement>('#url');
-    if (fileElement.files[0] !== undefined) {
-        var reader = new FileReader();
-        reader.onload = function (e) {
-            c.loadImage(e.target.result.toString(), true, setFields);
-        };
-        reader.readAsDataURL(fileElement.files[0]);
-    } else {
-        c.loadImage(urlElement.value, false, setFields);
+function reset(hideAgain: boolean = false) {
+    if (!originalData) {
+        return;
     }
-});
+    sharpenLevel = 0;
+    reload();
+    c.reloadCanvas(originalData);
+    currentMatrix = originalMatrix;
+    if (hideAgain) {
+        $moreEdges.style.display = 'none';
+        $lessEdges.style.display = 'none';
+        $autotoonGroup.style.display = 'none';
+    }
+}
 
-document.querySelector('#auto').addEventListener('click', function () {
+$dragDrop.addEventListener('click', () => $file.click());
+$dragDrop.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+});
+$dragDrop.addEventListener('dragexit', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+});
+$dragDrop.addEventListener('drag', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleFiles(e.dataTransfer.files);
+});
+$file.addEventListener('change', () => handleFiles($file.files));
+
+function handleFiles(files: FileList) {
+    const f = files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        // keep canvas from stretching too big
+        (c = Canvas('demoCanvas', getMaxWidth(), getMaxHeight(), getMaxSize())),
+            c.loadImage(e.target.result.toString(), true, setFields);
+        $dragDrop.style.display = 'none';
+        $demoCanvas.style.display = 'block';
+        $findEdges.style.display = 'block';
+    };
+    reader.readAsDataURL(f);
+}
+
+function applySharpenLevel() {
+    for (let i = 0; i < sharpenLevel; i++) {
+        currentMatrix = sharpenMask(currentMatrix);
+    }
+    for (let i = sharpenLevel; i < 0; i++) {
+        currentMatrix = gaussianMask(currentMatrix, 3, 0.7);
+    }
+}
+
+function cannyMethod() {
     // Canny edge detection method
-    matrixStack.push(currentMatrix);
     currentMatrix = gaussianMask(currentMatrix, 3, 1.0);
     currentSobel = sobelMask(currentMatrix);
     currentMatrix = currentSobel.S;
     currentMatrix = nonMaxSuppression(currentSobel.S, currentSobel.G);
-    currentMatrix = hysteresis(currentMatrix, 0.2, 0.5);
+    currentMatrix = hysteresis(currentMatrix, 0.18, 0.45);
     currentMatrix = inverted(currentMatrix);
+}
+
+$findEdges.addEventListener('click', function () {
+    reset();
+    sharpenLevel = 0;
+    applySharpenLevel();
+    cannyMethod();
+    $moreEdges.style.display = 'block';
+    $lessEdges.style.display = 'block';
+    reload();
+    $autotoonGroup.style.display = 'block';
+});
+
+$moreEdges.addEventListener('click', function () {
+    reset();
+    sharpenLevel++;
+    applySharpenLevel();
+    cannyMethod();
     reload();
 });
 
-document.querySelector('#blur').addEventListener('click', function () {
-    matrixStack.push(currentMatrix);
-    var radius = parseInt(
-            document.querySelector<HTMLInputElement>('#blur_radius').value
-        ),
-        sigma = parseFloat(
-            document.querySelector<HTMLInputElement>('#blur_sigma').value
-        );
-    currentMatrix = gaussianMask(currentMatrix, radius, sigma);
+$lessEdges.addEventListener('click', function () {
+    reset();
+    sharpenLevel--;
+    applySharpenLevel();
+    cannyMethod();
     reload();
 });
 
-document.querySelector('#sharpen').addEventListener('click', function () {
-    matrixStack.push(currentMatrix);
-    currentMatrix = sharpenMask(currentMatrix);
-    reload();
-});
-
-document.querySelector('#sobel').addEventListener('click', function () {
-    matrixStack.push(currentMatrix);
-    currentSobel = sobelMask(currentMatrix);
-    currentMatrix = currentSobel.S;
-    reload();
-});
-
-document.querySelector('#laplace').addEventListener('click', function () {
-    matrixStack.push(currentMatrix);
-    currentMatrix = laplaceMask(currentMatrix);
-    reload();
-});
-
-document.querySelector('#nonmax').addEventListener('click', function () {
-    matrixStack.push(currentMatrix);
-    currentMatrix = nonMaxSuppression(currentSobel.S, currentSobel.G);
-    reload();
-});
-
-document.querySelector('#hysteresis').addEventListener('click', function () {
-    matrixStack.push(currentMatrix);
-    var high = parseFloat(document.querySelector<HTMLInputElement>('#hys_hi').value),
-        low = parseFloat(document.querySelector<HTMLInputElement>('#hys_lo').value);
-    currentMatrix = hysteresis(currentMatrix, clamp(high, 0, 1), clamp(low, 0, 1));
-    reload();
-});
-
-document.querySelector('#invert').addEventListener('click', function () {
-    matrixStack.push(currentMatrix);
-    currentMatrix = inverted(currentMatrix);
-    reload();
-});
-
-document.querySelector('#autotoon').addEventListener('click', function () {
-    matrixStack.push(currentMatrix);
-    var speed = parseFloat(
-            document.querySelector<HTMLInputElement>('#toon_speed').value
-        ),
-        direction = document.querySelector<HTMLInputElement>('#toon_dir').value,
-        sort = document.querySelector<HTMLInputElement>('#toon_sort').value,
-        bgColor = parseInt(document.querySelector<HTMLInputElement>('#toon_bg').value),
+$autotoon.addEventListener('click', function () {
+    if (currentToon) {
+        currentToon.stop(() => {
+            currentToon = null;
+            $autotoon.textContent = 'Autotoon';
+        });
+        return;
+    }
+    const speed = parseFloat($toonSpeed.value),
+        direction = $toonDir.value,
+        sort = $toonSort.value,
+        bgColor = 255,
         M = currentMatrix,
         n = M[0].length,
         m = M.length,
@@ -159,7 +194,6 @@ document.querySelector('#autotoon').addEventListener('click', function () {
                 yMin = Math.min(yMin, r);
                 yMax = Math.max(yMax, r);
             });
-            console.log(yMax, yMin);
             return yMax - yMin;
         },
         // Number of cols the edge spans
@@ -171,7 +205,6 @@ document.querySelector('#autotoon').addEventListener('click', function () {
                 xMin = Math.min(xMin, c);
                 xMax = Math.max(xMax, c);
             });
-            console.log(xMax, xMin);
             return xMax - xMin;
         },
         transform = (function () {
@@ -226,73 +259,21 @@ document.querySelector('#autotoon').addEventListener('click', function () {
             }
             // now we select one of these functions and return it
             return { longest, random, darkest, center, widest }[sort];
-        })(),
-        update = function () {
-            currentToon = c.autoToon(
-                currentMatrix,
-                speed,
-                bgColor,
-                iterators[direction as 'top' | 'bottom' | 'left' | 'right'],
-                transform
-            );
-        };
-    if (currentToon) {
-        currentToon.stop(update);
-    } else {
-        update();
-    }
+        })();
+    currentToon = c.autoToon(
+        currentMatrix,
+        speed,
+        bgColor,
+        iterators[direction as 'top' | 'bottom' | 'left' | 'right'],
+        transform,
+        () => {
+            currentToon = null;
+            $autotoon.textContent = 'Autotoon';
+        }
+    );
+    $autotoon.textContent = 'Stop';
 });
 
-document.querySelector('#undo').addEventListener('click', function () {
-    currentMatrix = matrixStack.pop();
-    reload();
-});
+$reset.addEventListener('click', () => reset(true));
 
-document.querySelector('#reset').addEventListener('click', function () {
-    c.reloadCanvas(originalData);
-    matrixStack.push(currentMatrix);
-    currentMatrix = toMatrix(originalData);
-    document.querySelector<HTMLInputElement>('#file').value = ''; // remove selected file
-});
-
-document.querySelector('#save').addEventListener('click', function () {
-    window.location.href = c.getElem().toDataURL('image/png');
-});
-
-document.querySelector('#share').addEventListener('click', function () {
-    var src = encodeURI(c.getImage().src),
-        loc = window.location.href,
-        query = loc.indexOf('?'),
-        url = loc.slice(0, query > 0 ? query : loc.length) + '?src=' + src,
-        textArea = document.querySelector<HTMLTextAreaElement>('#sharetext');
-    if (src.length > 2000) {
-        alert('Too long. Try submitting file by URL, then sharing.');
-    } else {
-        textArea.value = url;
-        textArea.style.display = 'block';
-    }
-});
-
-// if src param is given, try to load canvas from that
-window.location.search
-    .slice(1)
-    .split('&')
-    .forEach(function (param) {
-        if (!param) return;
-        var split = param.split('='),
-            key = split[0],
-            val = decodeURI(split[1]);
-        if (key === 'src')
-            c.loadImage(val, val.indexOf('data:image/') !== -1, function () {
-                setFields();
-                if (window.location.hash === '#auto') {
-                    document.querySelector<HTMLButtonElement>('#auto').click();
-                    document.querySelector<HTMLButtonElement>('#autotoon').click();
-                }
-            });
-    });
-
-// TODO resize the image to fit canvas, make max size e.g. 1MP or size of viewport
-// TODO simplify the page, reduce the # of buttons and instead make sliders such as
-// Maybe add a loading spinner as well, and a way to save video?
-// edge trimming (hysteresis), edge sharpness (sharpening)
+// TODO add a loading spinner as well, and a way to save video?
