@@ -83,7 +83,6 @@ function reset(hideAgain: boolean = false) {
     if (!originalData) {
         return;
     }
-    sharpenLevel = 0;
     reload();
     c.reloadCanvas(originalData);
     currentMatrix = originalMatrix;
