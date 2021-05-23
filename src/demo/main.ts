@@ -291,8 +291,3 @@ window.location.search
                 }
             });
     });
-
-// TODO resize the image to fit canvas, make max size e.g. 1MP or size of viewport
-// TODO simplify the page, reduce the # of buttons and instead make sliders such as
-// Maybe add a loading spinner as well, and a way to save video?
-// edge trimming (hysteresis), edge sharpness (sharpening)
