@@ -5,3 +5,7 @@ and drawing. See the [demo](https://autotoon.pelmers.com) and read
 [my blog post for details](https://pelmers.com/edge-detection-and-drawing/).
 
 ![](example.gif)
+
+
+## Building
+`NODE_OPTIONS=--openssl-legacy-provider yarn build`

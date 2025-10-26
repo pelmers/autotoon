@@ -11,8 +11,6 @@ import {
 import { Mat, toImageData } from './matrix';
 import { toMatrix, clamp } from './util';
 
-declare const plausible: any;
-
 const getMaxWidth = () =>
     document.querySelector('body').getBoundingClientRect().width - 20;
 const getMaxHeight = () => window.screen.height - 50;
@@ -274,7 +272,6 @@ $autotoon.addEventListener('click', function () {
         }
     );
     $autotoon.textContent = 'Stop';
-    plausible('autotoon');
 });
 
 $reset.addEventListener('click', () => reset(true));
